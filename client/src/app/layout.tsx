@@ -1,5 +1,5 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -25,10 +25,7 @@ export default function RootLayout({
       >
         <SidebarProvider defaultOpen={false}>
           <AppSidebar />
-          <main>
-            <SidebarTrigger />
-            {children}
-          </main>
+          <main className={`w-screen `}>{children}</main>
         </SidebarProvider>
       </body>
     </html>
