@@ -1,4 +1,5 @@
 "use client";
+import axios from "axios";
 import { Plus, UploadIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import React, { useCallback, useState } from "react";
@@ -8,7 +9,7 @@ import { Button } from "../ui/button";
 
 const MyDropzone = () => {
   const [pdf, setPdf] = useState<File | null>(null);
-
+  const [uploaded, setUploaded] = useState(false);
   const isSendingRef = React.useRef(false);
 
   async function HandleSendFiles() {
@@ -19,12 +20,13 @@ const MyDropzone = () => {
       const formData = new FormData();
       formData.append("file", pdf);
 
-      const response = await axios.post("http://localhost:8000/upload_pdf/", {
-        formData,
-      });
+      const response = await axios.post(
+        "http://localhost:8000/upload_pdf/",
+        formData
+      );
       const data = response.data;
       console.log("response after file upaldoe:", data);
-
+      setUploaded(true);
       toast.success("File uploaded successfully!");
     } catch (error) {
       console.error("Upload error:", error);
