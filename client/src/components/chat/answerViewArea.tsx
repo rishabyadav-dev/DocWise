@@ -1,12 +1,16 @@
 "use client";
+import { useUploadedStore } from "@/store/uploadStore";
+import { motion } from "motion/react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import InputBox from "./inputBox";
 
 export default function AnswerViewArea() {
+  const uploaded = useUploadedStore((state) => state.uploaded);
+
   const [answer, setAnswer] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const askQuestion = async (question) => {
+  const askQuestion = async (question: string) => {
     if (!question.trim()) return;
 
     setAnswer("");
@@ -73,22 +77,23 @@ export default function AnswerViewArea() {
     }
   };
   return (
-    <div className="flex-1 flex flex-col min-h-0 justify-end">
-      <div className="flex-1 overflow-y-auto min-h-0 pb-4">
-        <div className="max-w-7xl mx-auto bg-gray-400/50 rounded-2xl p-7 mt-12">
-          <div className="text-black text-xl">
+    uploaded && (
+      <div className=" flex flex-col  ">
+        <motion.div className="text-black h-[80vh] bg-slate-50 max-w-6xl  mx-auto rounded-lg ">
+          <div className="h-full  overflow-y-auto scrollbar-thin text-xl p-8 border-2 rounded-lg pr-2">
             <ReactMarkdown>{answer}</ReactMarkdown>
-            {isStreaming && (
-              <span className="animate-pulse text-xl font-bold ml-1">|</span>
-            )}
+          </div>
+          {isStreaming && (
+            <span className="animate-pulse text-xl font-bold ml-1">|</span>
+          )}
+        </motion.div>
+
+        <div className="  ">
+          <div className="max-w-3xl mx-auto  ">
+            <InputBox askQuestion={askQuestion} />
           </div>
         </div>
       </div>
-      <div className="sticky bottom-0 left-0  right-0 px-4 pb-4  z-10">
-        <div className="max-w-3xl mx-auto  ">
-          <InputBox askQuestion={askQuestion} />
-        </div>
-      </div>
-    </div>
+    )
   );
 }
