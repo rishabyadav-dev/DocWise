@@ -1,9 +1,9 @@
 "use client";
 import { usePdfStore, useUploadedStore } from "@/store/uploadStore";
 import axios from "axios";
-import { Plus, UploadIcon } from "lucide-react";
+import { Loader2, Plus, PlusSquare, UploadIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import React, { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -11,12 +11,13 @@ import { Button } from "../ui/button";
 const MyDropzone = () => {
   const setPdf = usePdfStore((state) => state.setPdf);
   const pdf = usePdfStore((state) => state.pdf);
-  const isSendingRef = React.useRef(false);
+  const [isSending, setIsSending] = useState(false);
+
   const uploaded = useUploadedStore((state) => state.uploaded);
   const setUploaded = useUploadedStore((state) => state.setUploadedStatus);
   async function HandleSendFiles() {
-    if (isSendingRef.current || !pdf) return;
-    isSendingRef.current = true;
+    if (isSending || !pdf) return;
+    setIsSending(true);
 
     try {
       const formData = new FormData();
@@ -35,7 +36,7 @@ const MyDropzone = () => {
       console.error("Upload error:", error);
       toast.error(`Error: Failed to upload file`);
     } finally {
-      isSendingRef.current = false;
+      setIsSending(false);
     }
   }
 
@@ -81,102 +82,169 @@ const MyDropzone = () => {
   return (
     !uploaded && (
       <AnimatePresence>
-        <div className="fle x justify-center  h-fit items-center">
+        <motion.div className="flex justify-center items-center min-h-[400px] p-4">
           <motion.div
-            transition={{ duration: 0.2 }}
-            className={`${
-              pdf ? "bg-gray-200 border-2" : ""
-            } lg:max-h-[900px] max-w-[90vw] w-full lg:max-w-[500px] lg:min-w-[200px] overflow-hidden rounded-2xl`}
+            layout
+            className={`
+        ${pdf ? "bg-white border-gray-200 border-2 shadow-xl" : ""}
+        max-h-[600px] max-w-[90vw] w-full 
+        overflow-hidden rounded-lg
+      `}
           >
             {!pdf && (
               <motion.div
-                key={`upload-view-area`}
-                transition={{ duration: 0.2 }}
+                key="upload-view-area"
                 {...getRootProps({})}
-                className={`flex flex-col items-center p-10 rounded-2xl bg-slate-50 border-1   hover:bg-slate-200 hover:border-1 border-slate-400 hover:border-dashed shadow-2xl duration-500 text-gray-800 min-h-70 outline-none transition-colors cursor-pointer 
-              ${dropzoneBorderColor} ${
-                  isDragActive
-                    ? "bg-gray-900/30 border-2 w-[800px] border-dashed"
-                    : ""
-                }`}
+                className={`
+            flex flex-col items-center justify-center
+            p-12 rounded-lg hover:border-2 border-1 border-dashed hover:border-dashed
+            bg-gradient-to-br from-blue-50 to-blue-200
+            hover:from-blue-100 hover:to-blue-300
+            shadow-lg hover:shadow-xl
+            transition-all duration-300 ease-in-out
+            cursor-pointer outline-none
+            min-h-[300px]
+            ${dropzoneBorderColor}
+            ${
+              isDragActive
+                ? "border-blue-500 bg-gradient-to-br from-blue-100 to-blue-300 scale-105"
+                : "border-gray-300 hover:border-blue-400"
+            }
+          `}
               >
                 <input {...getInputProps()} />
-                {isDragActive ? (
-                  <p className="text-white">Drop the file here ...</p>
-                ) : (
-                  <div className="flex flex-col ">
-                    <div>Drag file here, or click to select file</div>
-                    <div className="text-red-700 text-2xl justify-center items-center flex">
-                      .pdf & .txt Only
+
+                <motion.div
+                  animate={isDragActive ? { scale: 1.1 } : { scale: 1 }}
+                  className="text-center space-y-4"
+                >
+                  <div className="text-6xl mb-4">📁</div>
+
+                  {isDragActive ? (
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-xl font-medium text-blue-700"
+                    >
+                      Drop your file here...
+                    </motion.p>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-lg font-medium text-gray-700">
+                        Drag & drop your file here
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        or click to browse
+                      </p>
+                      <div className="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-medium">
+                        📄 PDF & TXT files only
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </motion.div>
+
                 {isDragAccept && (
-                  <p className="text-green-500 mt-2">
-                    Only .pdf & .txt will be accepted!
-                  </p>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-6 text-center"
+                  >
+                    <div className="text-green-600 mb-2">
+                      <PlusSquare className="animate-pulse w-8 h-8 mx-auto" />
+                    </div>
+                  </motion.div>
                 )}
+
                 {isDragReject && (
-                  <p className="text-red-500 mt-2">
-                    Only .pdf & .txt will be accepted!
-                  </p>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4"
+                  >
+                    <p className="text-red-500 font-medium">
+                      ❌ Only PDF & TXT files are supported
+                    </p>
+                  </motion.div>
                 )}
               </motion.div>
             )}
 
             {pdf && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.5 }}
+                initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-                key={pdf.name}
-                className="border border-gray-200 rounded-2xl p-1 flex h-fit justify-center lg:max-w-full max-w-[85px] flex-col items-center text-center bg-slate-100"
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="bg-white rounded-lg p-6 relative"
               >
-                <div className="relative">
-                  <Button
-                    className="absolute hover:scale-105 hover:bg-black right-1 top-1 rounded-full flex justify-center items-center cursor-pointer w-7 h-7 bg-black/70 backdrop-blur-lg"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPdf(null);
-                    }}
-                  >
-                    <Plus className={`rotate-45 text-white `} />
-                  </Button>
-                  <div>
-                    <div className="lg:w- w-fit text-xs">
-                      <div className="text-3xl">📝</div>
-                      <div className="text-2xl font-sans text-black">
-                        {pdf.name}
-                      </div>{" "}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {pdf && (
-              <motion.div className="flex justify-center items-center mt-2">
                 <Button
-                  key={"sendbutton"}
-                  className={`hover:bg-black/80 hover:text-slate-100 border-1 border-slate-500 font-sans font-bold bg-slate-100 text-black/65 duration-500 w-14 lg:w-full lg:h-12 h-12 rounded-2xl cursor-pointer`}
-                  disabled={isSendingRef.current}
-                  onClick={() => {
-                    HandleSendFiles();
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2 w-8 h-8 flex justify-center items-center cursor-pointer rounded-full bg-red-600 hover:bg-red-600 text-white shadow-lg z-10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPdf(null);
                   }}
                 >
-                  {isSendingRef.current ? (
-                    <div className="animate-spin">⏳</div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <div className="text-2xl">Upload</div>
-                      <UploadIcon className="size-7" />
-                    </div>
-                  )}
+                  <Plus className="size-6 rotate-45" />
                 </Button>
+
+                <div className="text-center space-y-4">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                    className="text-6xl"
+                  >
+                    📄
+                  </motion.div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-lg text-gray-800 truncate max-w-xs">
+                      {pdf.name}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {(pdf.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+
+                <motion.div
+                  initial={{ y: 30, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="mt-6"
+                >
+                  <Button
+                    className={` cursor-pointer
+                w-full h-12 rounded-lg font-semibold text-base
+                transition-all duration-200
+                ${
+                  isSending
+                    ? "bg-blue-900 text-white cursor-not-allowed"
+                    : "bg-gradient-to-r from-blue-500 to-blue-800  hover:from-blue-950 hover:ring-1 hover:to-blue-900 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.01]"
+                }
+              `}
+                    disabled={isSending}
+                    onClick={HandleSendFiles}
+                  >
+                    {isSending ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-5 h-5  animate-spin" />
+                        <span className="text-white ">Uploading...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center  gap-2">
+                        <span>Upload File</span>
+                        <UploadIcon className="w-5 h-5" />
+                      </div>
+                    )}
+                  </Button>
+                </motion.div>
               </motion.div>
             )}
           </motion.div>
-        </div>
+        </motion.div>
       </AnimatePresence>
     )
   );

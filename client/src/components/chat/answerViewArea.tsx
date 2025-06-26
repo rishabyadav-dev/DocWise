@@ -82,9 +82,17 @@ export default function AnswerViewArea() {
   };
   return (
     uploaded && (
-      <div className=" flex flex-col h-[93vh] ">
-        <motion.div className="text-black h-[85vh] bg-slate-50 w-5xl  mx-auto rounded-lg ">
-          <div className="h-full  overflow-y-auto scrollbar-thin text-xl p-8 border-2 rounded-lg pr-2">
+      <motion.div
+        initial={{ x: 200, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className=" flex flex-col h-[93vh] "
+      >
+        <motion.div className="text-black h-[85vh] bg-slate-50 w-6xl  mx-auto rounded-lg ">
+          <div className="h-full overflow-y-auto scrollbar-thin text-xl p-8 border-2 rounded-lg pr-2 [&_.katex-display]:text-center [&_.katex-display]:my-6">
+            {isStreaming && answer.length === 0 && (
+              <div className="animate-pulse">Thinking...</div>
+            )}
             <ReactMarkdown
               remarkPlugins={[remarkMath]}
               rehypePlugins={[rehypeKatex]}
@@ -99,7 +107,7 @@ export default function AnswerViewArea() {
             <InputBox askQuestion={askQuestion} />
           </div>
         </div>
-      </div>
+      </motion.div>
     )
   );
 }

@@ -1,5 +1,3 @@
-import { PenBoxIcon, Settings } from "lucide-react";
-
 import {
   Sidebar,
   SidebarContent,
@@ -11,6 +9,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { PenBoxIcon, Settings } from "lucide-react";
 
 export function AppSidebar() {
   return (
@@ -19,17 +18,17 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Chat with PDF</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+            <SidebarMenu className="">
+              <SidebarMenuItem className="bg-blue-100  rounded-lg">
+                <SidebarMenuButton className="hover:bg-blue-300" asChild>
                   <a href={"/"}>
                     <PenBoxIcon />
                     <span>{"New chat"}</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+              <SidebarMenuItem className="bg-blue-100  rounded-lg">
+                <SidebarMenuButton className="hover:bg-blue-300" asChild>
                   <a href={"/settings"}>
                     <Settings />
                     <span>{"Settings"}</span>
