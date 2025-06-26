@@ -1,17 +1,25 @@
 "use client";
+import { useIsStreamingStore } from "@/store/uploadStore";
 import { FileSearch2Icon } from "lucide-react";
+import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import Loader from "../ui/loader";
 export default function InputBox({
   askQuestion,
 }: {
   askQuestion: (arg: string) => void;
 }) {
+  const isStreaming = useIsStreamingStore((state) => state.isStreaming);
+
   const [text, setText] = useState("");
   const handleSendquestion = () => {
-    toast.info("in handle send function");
+    if (isStreaming) {
+      toast.info("let current answer finish before asking other");
+      return;
+    }
 
     if (text.trim().length === 0) {
       console.log("input filed empty!!");
@@ -19,11 +27,32 @@ export default function InputBox({
       toast.error("question field is empty");
       return;
     }
-    askQuestion(text);
+    try {
+      askQuestion(text);
+    } catch (error) {
+      toast.error("Error:try again later");
+    }
   };
   return (
-    <div className="flex shadow-xl  shadow-black/30 w-full gap-1.5 rounded-lg overflow-hidden p-1.5  backdrop-blur-lg">
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7 }}
+      className="flex shadow-lg shadow-gray-400/40 border-2 border-slate-300 h-14  w-full gap-1 rounded-lg overflow-hidden p-1  "
+    >
+      {isStreaming && (
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4  }}
+          className="h-full flex text-slate-500 justify-center items-center"
+        >
+          <Loader size={15}></Loader>
+        </motion.div>
+      )}
       <Input
+        disabled={isStreaming}
         placeholder="Ask questions from your pdf"
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -32,16 +61,15 @@ export default function InputBox({
         }}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className=" rounded-lg w-full px-6 h-14 bg-black/20 placeholder:text-black/45 text-black font-sans !text-3xl"
+        className=" rounded-lg w-full px-3 h-full bg-slate-100 hover:bg-slate-200 hover:shadow-inner   border-slate-300 placeholder:text-black/45 text-black font-sans !text-3xl"
       />
       <Button
-        className=" rounded-lg text-center hover:bg-black/70 hover:scale-97 duration-500 cursor-pointer h-14 w-16 bg-black/80"
-        onClick={() => {
-          handleSendquestion();
-        }}
+        disabled={isStreaming}
+        className=" rounded-lg text-center hover:bg-slate-200 border-slate-300 bg-transparent border-2 hover:scale-97 duration-500 cursor-pointer h-full w-13 "
+        onClick={handleSendquestion}
       >
-        <FileSearch2Icon className="size-9" />
+        <FileSearch2Icon className="text-black size-7" />
       </Button>
-    </div>
+    </motion.div>
   );
 }

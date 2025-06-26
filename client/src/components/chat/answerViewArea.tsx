@@ -1,15 +1,19 @@
 "use client";
-import { useUploadedStore } from "@/store/uploadStore";
+import { useIsStreamingStore, useUploadedStore } from "@/store/uploadStore";
+import "katex/dist/katex.min.css";
 import { motion } from "motion/react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
 import InputBox from "./inputBox";
-
 export default function AnswerViewArea() {
   const uploaded = useUploadedStore((state) => state.uploaded);
 
   const [answer, setAnswer] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
+  const isStreaming = useIsStreamingStore((state) => state.isStreaming);
+  const setIsStreaming = useIsStreamingStore((state) => state.setIsStreaming);
+
   const askQuestion = async (question: string) => {
     if (!question.trim()) return;
 
@@ -78,18 +82,20 @@ export default function AnswerViewArea() {
   };
   return (
     uploaded && (
-      <div className=" flex flex-col  ">
-        <motion.div className="text-black h-[80vh] bg-slate-50 max-w-6xl  mx-auto rounded-lg ">
+      <div className=" flex flex-col h-[93vh] ">
+        <motion.div className="text-black h-[85vh] bg-slate-50 w-5xl  mx-auto rounded-lg ">
           <div className="h-full  overflow-y-auto scrollbar-thin text-xl p-8 border-2 rounded-lg pr-2">
-            <ReactMarkdown>{answer}</ReactMarkdown>
+            <ReactMarkdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+            >
+              {answer}
+            </ReactMarkdown>
           </div>
-          {isStreaming && (
-            <span className="animate-pulse text-xl font-bold ml-1">|</span>
-          )}
         </motion.div>
 
-        <div className="  ">
-          <div className="max-w-3xl mx-auto  ">
+        <div className=" justify-end mt-auto ">
+          <div className="max-w-4xl mx-auto  ">
             <InputBox askQuestion={askQuestion} />
           </div>
         </div>
