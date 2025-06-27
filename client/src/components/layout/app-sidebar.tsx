@@ -49,9 +49,9 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu className="list-none">
           {open && (
-            <SidebarMenuItem className="ml-2">
-              <span>Hi, </span>
-              <span>{session?.user.name}</span>
+            <SidebarMenuItem className="flex  list-none">
+              <div>Hi, </div>
+              <div>{session?.user.name}</div>
             </SidebarMenuItem>
           )}
           <SidebarMenuItem className="list-none">
