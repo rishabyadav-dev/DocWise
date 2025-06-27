@@ -89,9 +89,11 @@ export default function AnswerViewArea() {
         className=" flex flex-col h-[93vh] "
       >
         <motion.div className="text-black h-[85vh] bg-slate-50 w-6xl  mx-auto rounded-lg ">
-          <div className="h-full overflow-y-auto scrollbar-thin text-xl p-8 border-2 rounded-lg pr-2 [&_.katex-display]:text-center [&_.katex-display]:my-6">
+          <div className="h-full  overflow-y-auto scrollbar-thin text-xl p-8 border-2 rounded-lg pr-2 [&_.katex-display]:text-center [&_.katex-display]:my-6">
             {isStreaming && answer.length === 0 && (
-              <div className="animate-pulse">Thinking...</div>
+              <div className="font-mono font-stretch-condensed animate-pulse">
+                Thinking...
+              </div>
             )}
             <ReactMarkdown
               remarkPlugins={[remarkMath]}
