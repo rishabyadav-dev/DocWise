@@ -10,14 +10,12 @@ declare module "next-auth" {
       id: string;
       email: string;
       name: string | null;
-      image: string | null;
     };
   }
   interface User {
     id: string;
     email: string;
     name: string | null;
-    image: string | null;
   }
 }
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -72,7 +70,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             id: user.id,
             email: user.email,
             name: user.name,
-            image: user.image,
           };
         } catch (error) {
           console.log("error while login:", error);
@@ -89,7 +86,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
-        token.image = user.image;
       }
       if (account?.provider === "google" && user?.email && user.name) {
         try {
@@ -102,7 +98,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               data: {
                 email: user.email,
                 name: user.name,
-                image: user.image,
               },
             });
           }
@@ -119,7 +114,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           session.user.id = token.id;
           session.user.email = token.email;
           session.user.name = token.name;
-          session.user.image = token.image;
         }
       }
       return session;

@@ -1,6 +1,6 @@
 // client/src/app/layout.tsx
 import { auth } from "@/auth";
-import { AppSidebar } from "@/components/layout/app-sidebar";
+import { SidebarWrapper } from "@/components/layout/sidebar-wrapper";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider } from "next-auth/react";
@@ -29,9 +29,9 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}
       >
         <SessionProvider session={session}>
-          <SidebarProvider defaultOpen={false}>
+          <SidebarProvider defaultOpen>
             <div className="flex h-full w-full bg-blue-50">
-              {session && <AppSidebar />}
+              <SidebarWrapper />
               <main className="flex-1 flex flex-col ml-0.5 h-screen mr-2">
                 {children}
               </main>
