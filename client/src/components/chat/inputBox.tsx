@@ -39,7 +39,7 @@ export default function InputBox({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7 }}
-      className="flex shadow-lg shadow-gray-400/40 border-2 border-slate-300 h-14  w-full gap-1 rounded-lg overflow-hidden p-1  "
+      className="flex   border-1 border-slate-300 h-14 shadow-sm w-full gap-1 rounded-lg overflow-hidden p-1.5  "
     >
       {isStreaming && (
         <motion.div
@@ -53,7 +53,7 @@ export default function InputBox({
       )}
       <Input
         disabled={isStreaming}
-        placeholder="Ask questions from your pdf"
+        placeholder="Ask questions "
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             handleSendquestion();
@@ -61,14 +61,14 @@ export default function InputBox({
         }}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className=" rounded-lg w-full px-3 h-full bg-blue-100 font-sans hover:bg-blue-200 hover:shadow-inner   border-slate-300 placeholder:text-black/45 text-black  !text-3xl"
+        className=" rounded-full  w-full px-3 h-full  bg-blue-100 font-sans hover:bg-blue-200 hover:shadow-inner   border-slate-300 placeholder:text-black/45   !text-2xl"
       />
       <Button
         disabled={isStreaming}
-        className=" rounded-lg text-center hover:bg-blue-200 border-slate-300  bg-transparent border-2 hover:scale-97 duration-500 cursor-pointer h-full w-13 "
+        className=" rounded-full text-center bg-green-200 text-black hover:text-white hover:bg-black hover:border-0 border-slate-300   border-2 hover:scale-[1.05] duration-500 cursor-pointer h-full w-12"
         onClick={handleSendquestion}
       >
-        <FileSearch2Icon className="text-black size-7" />
+        <FileSearch2Icon className=" hover:text-white  size-7" />
       </Button>
     </motion.div>
   );

@@ -112,13 +112,36 @@ def stream_mistral_response(prompt, model="mistral-large-latest", max_tokens=200
         yield f"data: {json.dumps({'error': str(e)})}\n\n"
         yield f"data: [DONE]\n\n"
 
-def chunk_text(text, max_length=1000):
-    """Split text into smaller chunks"""
-    return [text[i:i + max_length] for i in range(0, len(text), max_length)]
+
+
+def chunk_text(text, max_length=1200, overlap=100):
+    """Split text into overlapping chunks for better context preservation"""
+    chunks = []
+    start = 0
+
+    while start < len(text):
+        end = start + max_length
+
+
+        if end < len(text):
+
+            for i in range(end - 200, end):
+                if i > start and text[i] in '.!?':
+                    end = i + 1
+                    break
+
+        chunk = text[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
+
+        start = end - overlap
+
+    return chunks
+
+
 
 @app.post("/upload_pdf/")
 async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(verify_token)):
-
     global pdf_chunks, pdf_embeddings
     try:
         with pdfplumber.open(file.file) as pdf:
@@ -127,10 +150,25 @@ async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(ve
         if not all_text.strip():
             return {"num_chunks": 0, "error": "No text found in PDF."}
 
+
         pdf_chunks = []
-        for chunk in all_text.split('\n\n'):
-            if chunk.strip():
-                pdf_chunks.extend(chunk_text(chunk, max_length=1000))
+
+        paragraphs = all_text.split('\n\n')
+
+        current_chunk = ""
+        for paragraph in paragraphs:
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+
+            if len(current_chunk) + len(paragraph) > 1200 and current_chunk:
+                pdf_chunks.extend(chunk_text(current_chunk, max_length=1200, overlap=100))
+                current_chunk = paragraph
+            else:
+                current_chunk += "\n\n" + paragraph if current_chunk else paragraph
+
+        if current_chunk:
+            pdf_chunks.extend(chunk_text(current_chunk, max_length=1200, overlap=100))
 
         pdf_embeddings = embedder.encode(pdf_chunks)
         return {"num_chunks": len(pdf_chunks)}
