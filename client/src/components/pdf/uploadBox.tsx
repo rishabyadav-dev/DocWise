@@ -23,9 +23,22 @@ const MyDropzone = () => {
       const formData = new FormData();
       formData.append("file", pdf);
 
+      localStorage.removeItem("backendToken");
+      let token: string | null = localStorage.getItem("backendToken");
+      if (!token) {
+        const response = await axios.get(`/api/backendJWT`);
+        token = response.data as string;
+        localStorage.setItem("backendToken", token);
+      }
+
       const response = await axios.post(
         "http://localhost:8000/upload_pdf/",
-        formData
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       const data = response.data;
       console.log("response after file upaldoe:", data);

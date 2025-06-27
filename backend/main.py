@@ -1,18 +1,20 @@
 import datetime
-
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import pdfplumber
+from jwt import InvalidTokenError
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import requests
 import json
 import os
 from datetime import datetime
-load_dotenv()
+import jwt
 
+load_dotenv()
 
 app = FastAPI()
 app.add_middleware(
@@ -24,18 +26,47 @@ app.add_middleware(
 )
 
 
-embedder = SentenceTransformer('all-MiniLM-L6-v2')
+SECRET_KEY = os.getenv("BACKEND_JWT_SECRET")
+if not SECRET_KEY:
+    raise ValueError("BACKEND_JWT_SECRET environment variable not set.")
+ALGORITHM = "HS256"
 
+
+security = HTTPBearer()
+
+embedder = SentenceTransformer('all-MiniLM-L6-v2')
 
 pdf_chunks = []
 pdf_embeddings = []
-
 
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 if not MISTRAL_API_KEY:
     raise ValueError("MISTRAL_API_KEY environment variable not set.")
 
 
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        if not credentials.credentials:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No token provided",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        payload = jwt.decode(
+            credentials.credentials,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+
+        return payload
+
+    except InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 def stream_mistral_response(prompt, model="mistral-large-latest", max_tokens=2000):
     """Stream response from Mistral AI API"""
     url = "https://api.mistral.ai/v1/chat/completions"
@@ -75,22 +106,19 @@ def stream_mistral_response(prompt, model="mistral-large-latest", max_tokens=200
                     except json.JSONDecodeError:
                         continue
 
-
         yield f"data: [DONE]\n\n"
 
     except Exception as e:
         yield f"data: {json.dumps({'error': str(e)})}\n\n"
         yield f"data: [DONE]\n\n"
 
-
 def chunk_text(text, max_length=1000):
     """Split text into smaller chunks"""
     return [text[i:i + max_length] for i in range(0, len(text), max_length)]
 
-
 @app.post("/upload_pdf/")
-async def upload_pdf(file: UploadFile = File(...)):
-    """Upload and process a PDF file"""
+async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(verify_token)):
+
     global pdf_chunks, pdf_embeddings
     try:
         with pdfplumber.open(file.file) as pdf:
@@ -99,12 +127,10 @@ async def upload_pdf(file: UploadFile = File(...)):
         if not all_text.strip():
             return {"num_chunks": 0, "error": "No text found in PDF."}
 
-
         pdf_chunks = []
         for chunk in all_text.split('\n\n'):
             if chunk.strip():
                 pdf_chunks.extend(chunk_text(chunk, max_length=1000))
-
 
         pdf_embeddings = embedder.encode(pdf_chunks)
         return {"num_chunks": len(pdf_chunks)}
@@ -112,10 +138,9 @@ async def upload_pdf(file: UploadFile = File(...)):
     except Exception as e:
         return {"num_chunks": 0, "error": str(e)}
 
-
 @app.post("/ask/")
-async def ask_question_stream(question: str = Form(...)):
-    """Ask a question about the uploaded PDF with streaming response"""
+async def ask_question_stream(question: str = Form(...), token_data: dict = Depends(verify_token)):
+
 
     def create_error_stream(message):
         yield f"data: {json.dumps({'content': message})}\n\n"
@@ -132,7 +157,6 @@ async def ask_question_stream(question: str = Form(...)):
             }
         )
 
-
     question_embedding = embedder.encode([question])[0]
     similarities = np.dot(pdf_embeddings, question_embedding)
     top_k = 7
@@ -140,10 +164,9 @@ async def ask_question_stream(question: str = Form(...)):
     context = "\n".join([pdf_chunks[i] for i in best_indices])
     today = datetime.now().strftime("%Y-%m-%d")
 
-
     prompt = (
-        f"You are an expert document analyst. Based on the following context from a PDF document, "
-        f"provide a well-structured, concise answer to the user's question.\n\n"
+        f"You are an expert document analyst.strictly Based on the following context from a PDF document only, "
+        f"provide a well-structured,dont answer anything which is out of PDF context, concise answer to the user's question.\n\n"
 
         f"FORMATTING REQUIREMENTS:\n"
         f"- Use proper markdown formatting\n"
@@ -156,7 +179,6 @@ async def ask_question_stream(question: str = Form(...)):
         f"- give proper space between lines for good user view\n"
         f"- Include relevant examples from the context\n"
         f"- Structure with clear headings when appropriate\n\n"
-
 
         f"MATH FORMATTING EXAMPLES:\n"
         f"- Factorials: $13!$, $3!$, $4!$\n"
@@ -180,8 +202,8 @@ async def ask_question_stream(question: str = Form(...)):
         }
     )
 
-
 @app.get("/")
 async def root():
-    """Health check endpoint"""
+    """Health check endpoint - no authentication required"""
     return {"message": "PDF Chat API is running with streaming!"}
+

@@ -1,5 +1,6 @@
 "use client";
 import { useIsStreamingStore, useUploadedStore } from "@/store/uploadStore";
+import axios from "axios";
 import "katex/dist/katex.min.css";
 import { motion } from "motion/react";
 import { useState } from "react";
@@ -7,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import InputBox from "./inputBox";
+
 export default function AnswerViewArea() {
   const uploaded = useUploadedStore((state) => state.uploaded);
 
@@ -23,10 +25,19 @@ export default function AnswerViewArea() {
     try {
       const formData = new FormData();
       formData.append("question", question);
-
+      localStorage.removeItem("backendToken");
+      let token: string | null = localStorage.getItem("backendToken");
+      if (!token) {
+        const response = await axios.get(`/api/backendJWT`);
+        token = response.data as string;
+        localStorage.setItem("backendToken", token);
+      }
       const response = await fetch("http://localhost:8000/ask/", {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
