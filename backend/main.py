@@ -1,4 +1,3 @@
-import datetime
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,7 +5,9 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import pdfplumber
 from jwt import InvalidTokenError
-from sentence_transformers import SentenceTransformer
+from optimum.onnxruntime import ORTModelForFeatureExtraction
+from transformers import AutoTokenizer
+import torch
 import numpy as np
 import requests
 import json
@@ -27,16 +28,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 SECRET_KEY = os.getenv("BACKEND_JWT_SECRET")
 if not SECRET_KEY:
     raise ValueError("BACKEND_JWT_SECRET environment variable not set.")
 ALGORITHM = "HS256"
 
-
 security = HTTPBearer()
 
-embedder = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
+embedder_model = ORTModelForFeatureExtraction.from_pretrained(
+    "sentence-transformers/all-MiniLM-L6-v2", 
+    export=True, 
+    provider="CPUExecutionProvider"
+)
+embedder_tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+
 pdf_chunks = []
 pdf_embeddings = []
 
@@ -44,6 +49,24 @@ MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 if not MISTRAL_API_KEY:
     raise ValueError("MISTRAL_API_KEY environment variable not set.")
 
+def encode_texts(texts):
+    """Encode texts using ONNX model for better performance"""
+    if isinstance(texts, str):
+        texts = [texts]
+    
+    inputs = embedder_tokenizer(
+        texts, 
+        padding=True, 
+        truncation=True, 
+        return_tensors="pt", 
+        max_length=512
+    )
+    
+    with torch.no_grad():
+        outputs = embedder_model(**inputs)
+    
+    embeddings = outputs.last_hidden_state.mean(dim=1)
+    return embeddings.detach().numpy()
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -68,6 +91,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
 def stream_mistral_response(prompt, model="mistral-large-latest", max_tokens=2000):
     """Stream response from Mistral AI API"""
     url = "https://api.mistral.ai/v1/chat/completions"
@@ -113,8 +137,6 @@ def stream_mistral_response(prompt, model="mistral-large-latest", max_tokens=200
         yield f"data: {json.dumps({'error': str(e)})}\n\n"
         yield f"data: [DONE]\n\n"
 
-
-
 def chunk_text(text, max_length=1200, overlap=100):
     chunks = []
     start = 0
@@ -122,9 +144,7 @@ def chunk_text(text, max_length=1200, overlap=100):
     while start < len(text):
         end = start + max_length
 
-
         if end < len(text):
-
             for i in range(end - 200, end):
                 if i > start and text[i] in '.!?':
                     end = i + 1
@@ -138,8 +158,6 @@ def chunk_text(text, max_length=1200, overlap=100):
 
     return chunks
 
-
-
 @app.post("/upload_pdf/")
 async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(verify_token)):
     global pdf_chunks, pdf_embeddings
@@ -150,9 +168,7 @@ async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(ve
         if not all_text.strip():
             return {"num_chunks": 0, "error": "No text found in PDF."}
 
-
         pdf_chunks = []
-
         paragraphs = all_text.split('\n\n')
 
         current_chunk = ""
@@ -170,7 +186,7 @@ async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(ve
         if current_chunk:
             pdf_chunks.extend(chunk_text(current_chunk, max_length=1200, overlap=100))
 
-        pdf_embeddings = embedder.encode(pdf_chunks)
+        pdf_embeddings = encode_texts(pdf_chunks)
         return {"num_chunks": len(pdf_chunks)}
 
     except Exception as e:
@@ -178,8 +194,6 @@ async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(ve
 
 @app.post("/ask/")
 async def ask_question_stream(question: str = Form(...), token_data: dict = Depends(verify_token)):
-
-
     def create_error_stream(message):
         yield f"data: {json.dumps({'content': message})}\n\n"
         yield f"data: [DONE]\n\n"
@@ -195,7 +209,7 @@ async def ask_question_stream(question: str = Form(...), token_data: dict = Depe
             }
         )
 
-    question_embedding = embedder.encode([question])[0]
+    question_embedding = encode_texts([question])[0]
     similarities = np.dot(pdf_embeddings, question_embedding)
     top_k = 7
     best_indices = similarities.argsort()[-top_k:][::-1]
@@ -245,5 +259,4 @@ async def ask_question_stream(question: str = Form(...), token_data: dict = Depe
 @app.get("/")
 async def root():
     """Health check endpoint - no authentication required"""
-    return {"message": "PDF Chat API is running with streaming!"}
-
+    return {"message": "PDF Chat API is running with ONNX optimization!"}
