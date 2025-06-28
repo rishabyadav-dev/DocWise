@@ -15,11 +15,13 @@ from datetime import datetime
 import jwt
 
 load_dotenv()
+origins = os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
 
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
