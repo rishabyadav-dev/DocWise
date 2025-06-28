@@ -36,8 +36,7 @@ ALGORITHM = "HS256"
 
 security = HTTPBearer()
 
-embedder = SentenceTransformer('all-MiniLM-L6-v2')
-
+embedder = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
 pdf_chunks = []
 pdf_embeddings = []
 
