@@ -115,7 +115,6 @@ def stream_mistral_response(prompt, model="mistral-large-latest", max_tokens=200
 
 
 def chunk_text(text, max_length=1200, overlap=100):
-    """Split text into overlapping chunks for better context preservation"""
     chunks = []
     start = 0
 
@@ -203,31 +202,33 @@ async def ask_question_stream(question: str = Form(...), token_data: dict = Depe
     today = datetime.now().strftime("%Y-%m-%d")
 
     prompt = (
-        f"You are an expert document analyst.strictly Based on the following context from a PDF document only, "
-        f"provide a well-structured,dont answer anything which is out of PDF context, concise answer to the user's question.\n\n"
-
-        f"FORMATTING REQUIREMENTS:\n"
-        f"- Use proper markdown formatting\n"
-        f"- For mathematical expressions, use LaTeX syntax:\n"
-        f"  * Inline math: $expression$ (e.g., $x^2 + y^2$)\n"
-        f"  * Display math: $$expression$$ (e.g., $$\\frac{{a!}}{{b! \\cdot c!}}$$)\n"
-        f"- Use **bold text** for emphasis\n"
-        f"- Use bullet points for lists\n"
-        f"- Use numbered lists for sequential steps\n"
-        f"- give proper space between lines for good user view\n"
-        f"- Include relevant examples from the context\n"
-        f"- Structure with clear headings when appropriate\n\n"
-
-        f"MATH FORMATTING EXAMPLES:\n"
+        f"# 📝 Expert Document Analyst\n\n"
+        f"➡️ **Answer the user's question strictly using only the provided PDF context.**\n"
+        f"🚫 *Do NOT include any information not present in the context.*\n\n"
+        f"---\n"
+        f"## ✨ Formatting Guidelines\n"
+        f"- Use markdown headings (with **bold** for section titles)\n"
+        f"- Use **bold** for emphasis\n"
+        f"- Use bullet points (•) and numbered lists (1., 2., 3.)\n"
+        f"- For math, use LaTeX: inline as $...$, display as $$...$$ (centered)\n"
+        f"- Add relevant examples from the context\n"
+        f"- Use good spacing between sections\n"
+        f"- Add emojis to highlight important info\n\n"
+        f"---\n"
+        f"## 🧮 Math Formatting Examples\n"
+        f"- Inline: $x^2 + y^2$\n"
+        f"- Display: $$\\frac{{a!}}{{b! \\cdot c!}}$$\n"
         f"- Factorials: $13!$, $3!$, $4!$\n"
         f"- Fractions: $\\frac{{13!}}{{3! \\cdot 2! \\cdot 4!}}$\n"
-        f"- Display formulas: $$\\frac{{13!}}{{3! \\cdot 2! \\cdot 4!}} = 2880$$\n\n"
-         f"display formulas in center of screen to make its visibility good"
-
-        f"Today is: {today}\n\n"
-        f"Context:\n{context}\n\n"
-        f"Question: {question}\n\n"
-        f"Provide a detailed, comprehensive answer following the formatting requirements above:"
+        f"- Display: $$\\frac{{13!}}{{3! \\cdot 2! \\cdot 4!}} = 2880$$\n\n"
+        f" {today}\n\n"
+        f"---\n"
+        f"## 📄 Context\n"
+        f"{context}\n\n"
+        f"## ❓ Question\n"
+        f"{question}\n\n"
+        f"---\n"
+        f"💡 *Please provide a well-structured, concise, and visually appealing answer following the above formatting.*"
     )
 
     return StreamingResponse(

@@ -11,7 +11,6 @@ export async function GET() {
     }
 
     if (!process.env.BACKEND_JWT_SECRET) {
-      console.error("BACKEND_JWT_SECRET is not set");
       return NextResponse.json(
         { error: "Server configuration error" },
         { status: 500 }
@@ -29,7 +28,6 @@ export async function GET() {
       process.env.BACKEND_JWT_SECRET,
       { algorithm: "HS256" }
     );
-    console.log("token in server:", token);
 
     return new Response(token, {
       status: 200,

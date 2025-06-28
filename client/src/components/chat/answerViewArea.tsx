@@ -3,12 +3,18 @@ import { useIsStreamingStore, useUploadedStore } from "@/store/uploadStore";
 import axios from "axios";
 import "katex/dist/katex.min.css";
 import { motion } from "motion/react";
+import { Merriweather } from "next/font/google";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import InputBox from "./inputBox";
 
+const merriweather = Merriweather({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
+});
 export default function AnswerViewArea() {
   const uploaded = useUploadedStore((state) => state.uploaded);
 
@@ -97,26 +103,36 @@ export default function AnswerViewArea() {
         initial={{ x: 200, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className=" flex flex-col h-[93vh] "
+        className="flex flex-col  h-[93vh]"
       >
-        <motion.div className="text-black h-[85vh] shadow-sm bg-slate-50 w-6xl  mx-auto rounded-lg ">
-          <div className="h-full  overflow-y-auto scrollbar-thin text-xl p-8 border-2 rounded-lg pr-2 [&_.katex-display]:text-center [&_.katex-display]:my-6">
-            {isStreaming && answer.length === 0 && (
-              <div className="font-mono font-stretch-condensed animate-pulse">
-                Thinking...
-              </div>
-            )}
-            <ReactMarkdown
-              remarkPlugins={[remarkMath]}
-              rehypePlugins={[rehypeKatex]}
-            >
-              {answer}
-            </ReactMarkdown>
-          </div>
-        </motion.div>
+        <div
+          className={`font-serif ${merriweather.className} overflow-y-auto py-10 mx-12 px-8 scrollbar-thin
+    prose prose-slate max-w-none
+    leading-relaxed
+    [&>*]:text-lg
+    [&_h1]:text-3xl
+    [&_h2]:text-2xl
+    [&_h3]:text-xl
+    [&_li]:text-lg
+    [&_p]:text-lg
+    [&_.katex-display]:text-center mb-1.5 [&_.katex-display]:my-6
+  `}
+        >
+          {isStreaming && answer.length === 0 && (
+            <div className="font-mono font-stretch-condensed animate-pulse">
+              Thinking...
+            </div>
+          )}
+          <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+          >
+            {answer}
+          </ReactMarkdown>
+        </div>
 
-        <div className=" justify-end mt-auto ">
-          <div className="max-w-4xl mx-auto  ">
+        <div className=" mt-auto">
+          <div className="max-w-4xl mx-auto">
             <InputBox askQuestion={askQuestion} />
           </div>
         </div>
