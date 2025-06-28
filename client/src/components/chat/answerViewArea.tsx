@@ -38,13 +38,16 @@ export default function AnswerViewArea() {
         token = response.data as string;
         localStorage.setItem("backendToken", token);
       }
-      const response = await fetch("http://localhost:8000/ask/", {
-        method: "POST",
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/ask/`,
+        {
+          method: "POST",
+          body: formData,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

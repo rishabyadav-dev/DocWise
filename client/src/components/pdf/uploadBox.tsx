@@ -32,7 +32,7 @@ const MyDropzone = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:8000/upload_pdf/",
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/upload_pdf/`,
         formData,
         {
           headers: {
