@@ -1,14 +1,8 @@
 import { HashPassword } from "@/lib/hash";
 import { prisma } from "@/lib/prisma";
+import { UserCreateSchema } from "@/lib/Zodschema/user";
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-
-export const UserCreateSchema = z.object({
-  name: z.string().min(3, "Name must be at least 2 characters"),
-  email: z.string().min(6, "Invalid email!"),
-  password: z.string().min(6, "Password must be at least 8 characters"),
-});
 
 export async function POST(req: NextRequest) {
   const {
@@ -23,11 +17,10 @@ export async function POST(req: NextRequest) {
     name: name.trim(),
   });
 
-  if (zodCheck.error) {
-    console.log("zod error:", zodCheck.error);
+  if (!zodCheck.success) {
     return NextResponse.json(
       {
-        message: `${zodCheck.error}`,
+        message: zodCheck.error.errors.map((e) => e.message).join(", "),
       },
       { status: 400 }
     );
@@ -44,7 +37,7 @@ export async function POST(req: NextRequest) {
         { message: "User already exists!,try logging in." },
         { status: 409 }
       );
-    const hashedPassword = await HashPassword(password);
+    const hashedPassword = await HashPassword(password.trim());
     await prisma.user.create({
       data: {
         email: normalizedEmail,

@@ -1,38 +1,66 @@
 "use client";
+import axios from "axios";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Loader from "@/components/ui/loader";
-import axios from "axios";
+import { UserCreateSchema } from "@/lib/Zodschema/user";
 import { Check } from "lucide-react";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
 export default function SignUpPage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/");
+    }
+  }, [status, router]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loader, setLoader] = useState(false);
-  const router = useRouter();
+  const [fieldErrors, setFieldErrors] = useState<{ [k: string]: string }>({});
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   async function HandleSignup() {
     setLoader(true);
+    setFieldErrors({});
+
+    const result = UserCreateSchema.safeParse({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password: password.trim(),
+    });
+
+    if (!result.success) {
+      const errors: { [k: string]: string } = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) errors[err.path[0]] = err.message;
+      });
+      setFieldErrors(errors);
+      setLoader(false);
+      return;
+    }
+
     try {
-      const res = await axios.post(`/api/signup`, {
-        email: email.trim().toLowerCase(),
-        password: password.trim(),
-        name: name.trim(),
+      const res = await axios.post<{ message: string }>(`/api/signup`, {
+        email: result.data.email,
+        password: result.data.password,
+        name: result.data.name,
       });
       toast.success(res.data.message);
       router.push("/signin");
-    } catch (error) {
+    } catch (error: any) {
       if (axios.isAxiosError(error)) {
-        toast.error("User already exists! Try logging in.");
+        toast.error(
+          error.response?.data?.message ||
+            "User already exists! Try logging in."
+        );
       } else {
         toast.error("Network error. Check your connection.");
       }
@@ -98,34 +126,61 @@ export default function SignUpPage() {
           </div>
 
           <div className="space-y-5">
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              type="text"
-              placeholder="Full Name"
-              className="px-4 py-3 text-lg"
-              required
-            />
-            <Input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={handleKeyDown}
-              type="email"
-              placeholder="Email"
-              className="px-4 py-3 text-lg"
-              required
-            />
-            <Input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              type="password"
-              placeholder="Password"
-              className="px-4 py-3 text-lg"
-              required
-              minLength={6}
-            />
+            <div>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                type="text"
+                placeholder="Full Name"
+                className="px-4 py-3 text-lg"
+                required
+                autoComplete="name"
+                aria-label="Full Name"
+              />
+              {fieldErrors.name && (
+                <div className="text-red-600 text-sm mt-1">
+                  {fieldErrors.name}
+                </div>
+              )}
+            </div>
+            <div>
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={handleKeyDown}
+                type="email"
+                placeholder="Email"
+                className="px-4 py-3 text-lg"
+                required
+                autoComplete="email"
+                aria-label="Email"
+              />
+              {fieldErrors.email && (
+                <div className="text-red-600 text-sm mt-1">
+                  {fieldErrors.email}
+                </div>
+              )}
+            </div>
+            <div>
+              <Input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
+                type="password"
+                placeholder="Password"
+                className="px-4 py-3 text-lg"
+                required
+                minLength={8}
+                autoComplete="new-password"
+                aria-label="Password"
+              />
+              {fieldErrors.password && (
+                <div className="text-red-600 text-sm mt-1">
+                  {fieldErrors.password}
+                </div>
+              )}
+            </div>
             <Button
               className="w-full cursor-pointer py-3 text-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg"
               disabled={loader}
