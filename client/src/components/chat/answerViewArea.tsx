@@ -7,9 +7,10 @@ import { Merriweather } from "next/font/google";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
+import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { useSidebar } from "../ui/sidebar";
 import InputBox from "./inputBox";
-
 const merriweather = Merriweather({
   subsets: ["latin"],
   weight: ["400", "700"],
@@ -17,7 +18,7 @@ const merriweather = Merriweather({
 });
 export default function AnswerViewArea() {
   const uploaded = useUploadedStore((state) => state.uploaded);
-
+  const { open } = useSidebar();
   const [answer, setAnswer] = useState("");
   const isStreaming = useIsStreamingStore((state) => state.isStreaming);
   const setIsStreaming = useIsStreamingStore((state) => state.setIsStreaming);
@@ -109,7 +110,7 @@ export default function AnswerViewArea() {
         className="flex flex-col  h-[93vh]"
       >
         <div
-          className={`font-serif ${merriweather.className} overflow-y-auto py-10 mx-12 px-8 scrollbar-thin
+          className={`font-serif ${merriweather.className} overflow-y-auto py-10 mx-30  px-8 scrollbar-thin
     prose prose-slate max-w-none
     leading-relaxed
     [&>*]:text-lg
@@ -127,7 +128,7 @@ export default function AnswerViewArea() {
             </div>
           )}
           <ReactMarkdown
-            remarkPlugins={[remarkMath]}
+            remarkPlugins={[remarkMath, remarkGfm]}
             rehypePlugins={[rehypeKatex]}
           >
             {answer}

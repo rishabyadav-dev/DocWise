@@ -14,6 +14,16 @@ body {
 body {
   box-sizing: border-box;
 }
+.prose table {
+  @apply w-full border-collapse mb-6;
+}
+.prose th,
+.prose td {
+  @apply border border-slate-300 px-4 py-2 text-left;
+}
+.prose th {
+  @apply bg-slate-100 font-bold;
+}
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
