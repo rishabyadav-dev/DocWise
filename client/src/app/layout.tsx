@@ -29,7 +29,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}
       >
         <SessionProvider session={session}>
-          <SidebarProvider defaultOpen>
+          <SidebarProvider defaultOpen={false}>
             <div className="flex h-full w-full bg-blue-50">
               <SidebarWrapper />
               <main className="flex-1 flex flex-col ml-0.5 h-screen mr-2">
