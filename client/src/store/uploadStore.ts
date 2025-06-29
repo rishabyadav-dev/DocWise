@@ -12,11 +12,20 @@ type PdfStore = {
   pdf: File | null;
   setPdf: (value: File | null) => void;
 };
-type SuggestionsStore = {
-  suggestions: Array<string> | null;
-  setSuggestions: (value: Array<string> | null) => void;
+type PDFAnalysisResponse = {
+  num_chunks: number;
+  summary: string;
+  suggested_questions: string[];
 };
 
+type SuggestionsStore = {
+  suggestions: PDFAnalysisResponse | null;
+  setSuggestions: (value: PDFAnalysisResponse | null) => void;
+};
+export const useSuggestionsStore = create<SuggestionsStore>((set) => ({
+  suggestions: null,
+  setSuggestions: (value) => set({ suggestions: value }),
+}));
 export const useUploadedStore = create<UploadStore>((set) => ({
   uploaded: false,
   setUploadedStatus: (value) => set({ uploaded: value }),
@@ -28,8 +37,4 @@ export const usePdfStore = create<PdfStore>((set) => ({
 export const useIsStreamingStore = create<IsStreamingStore>((set) => ({
   isStreaming: false,
   setIsStreaming: (value) => set({ isStreaming: value }),
-}));
-export const useSuggestionsStore = create<SuggestionsStore>((set) => ({
-  suggestions: null,
-  setSuggestions: (value) => set({ suggestions: value }),
 }));

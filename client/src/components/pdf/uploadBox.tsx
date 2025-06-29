@@ -45,11 +45,14 @@ const MyDropzone = () => {
           },
         }
       );
-      setSuggestions(response.data.suggested_questions);
-      console.log(
-        "response after file upaldoe:",
-        response.data.suggested_questions
-      );
+
+      const payload = {
+        summary: response.data.summary,
+        suggested_questions: response.data.suggested_questions,
+        num_chunks: response.data.num_chunks,
+      };
+      setSuggestions(payload);
+      console.log(payload);
       setUploaded(true);
 
       toast.success("File uploaded successfully!");

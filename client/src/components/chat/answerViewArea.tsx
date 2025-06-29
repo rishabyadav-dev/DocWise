@@ -14,7 +14,6 @@ import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import { Button } from "../ui/button";
-import { useSidebar } from "../ui/sidebar";
 import InputBox from "./inputBox";
 const merriweather = Merriweather({
   subsets: ["latin"],
@@ -23,11 +22,11 @@ const merriweather = Merriweather({
 });
 export default function AnswerViewArea() {
   const uploaded = useUploadedStore((state) => state.uploaded);
-  const { open } = useSidebar();
+  // const { open } = useSidebar();
   const [answer, setAnswer] = useState("");
   const isStreaming = useIsStreamingStore((state) => state.isStreaming);
   const setIsStreaming = useIsStreamingStore((state) => state.setIsStreaming);
-  const suggestions = useSuggestionsStore((state) => state.suggestions);
+  const data = useSuggestionsStore((state) => state.suggestions);
 
   const askQuestion = async (question: string) => {
     if (!question.trim()) return;
@@ -129,11 +128,14 @@ export default function AnswerViewArea() {
   `}
         >
           {answer.length === 0 && (
-            <div className="w-full mx-auto">
+            <div className="w-full ">
+              <div>{data?.summary}</div>
               <div className="flex flex-wrap gap-2">
-                {suggestions?.map((s, index) => (
+                {data?.suggested_questions?.map((s, index) => (
                   <div key={index}>
-                    <Button>{s}</Button>
+                    <Button className="cursor-pointer hover:bg-blue-300 bg-blue-100 text-black border-1">
+                      {s}
+                    </Button>
                   </div>
                 ))}
               </div>

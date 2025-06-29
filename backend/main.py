@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import pdfplumber
 from jwt import InvalidTokenError
@@ -9,13 +9,12 @@ from optimum.onnxruntime import ORTModelForFeatureExtraction
 from transformers import AutoTokenizer
 import torch
 import numpy as np
-import requests
 import json
 import os
 from datetime import datetime
 import jwt
-import psutil  
-from fastapi.responses import JSONResponse
+import psutil
+import google.generativeai as genai
 
 load_dotenv()
 origins = os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
@@ -37,6 +36,13 @@ ALGORITHM = "HS256"
 
 security = HTTPBearer()
 
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable not set.")
+
+genai.configure(api_key=GEMINI_API_KEY)
+gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+
 embedder_model = ORTModelForFeatureExtraction.from_pretrained(
     "./onnx_model",  
     provider="CPUExecutionProvider"
@@ -46,15 +52,11 @@ embedder_tokenizer = AutoTokenizer.from_pretrained("./onnx_model")
 pdf_chunks = []
 pdf_embeddings = []
 
-MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
-if not MISTRAL_API_KEY:
-    raise ValueError("MISTRAL_API_KEY environment variable not set.")
-
 def log_memory_usage():
     process = psutil.Process(os.getpid())
     print(f"Memory usage: {process.memory_info().rss / 1024 ** 2:.2f} MB")
 
-def encode_texts(texts, batch_size=64):  #
+def encode_texts(texts, batch_size=64):
     if isinstance(texts, str):
         texts = [texts]
     all_embeddings = []
@@ -73,6 +75,7 @@ def encode_texts(texts, batch_size=64):  #
         all_embeddings.append(embeddings.detach().cpu().numpy())
     log_memory_usage() 
     return np.vstack(all_embeddings)
+
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
         if not credentials.credentials:
@@ -97,50 +100,40 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-def stream_mistral_response(prompt, model="mistral-large-latest", max_tokens=2000):
-    """Stream response from Mistral AI API"""
-    url = "https://api.mistral.ai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {MISTRAL_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "model": model,
-        "messages": [
-            {"role": "system",
-             "content": "You are a helpful assistant that answers questions based only on the provided context from a PDF document. Provide detailed, accurate answers."},
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": max_tokens,
-        "temperature": 0.2,
-        "stream": True
-    }
-
+def stream_gemini_response(prompt):
+    """Stream response from Gemini Flash"""
     try:
-        response = requests.post(url, headers=headers, json=data, stream=True)
-        response.raise_for_status()
-
-        for line in response.iter_lines():
-            if line:
-                line_str = line.decode('utf-8')
-                if line_str.startswith('data: '):
-                    data_str = line_str[6:]
-                    if data_str.strip() == '[DONE]':
-                        break
-                    try:
-                        chunk_data = json.loads(data_str)
-                        if 'choices' in chunk_data and len(chunk_data['choices']) > 0:
-                            delta = chunk_data['choices'][0].get('delta', {})
-                            if 'content' in delta:
-                                yield f"data: {json.dumps({'content': delta['content']})}\n\n"
-                    except json.JSONDecodeError:
-                        continue
-
+        response = gemini_model.generate_content(
+            prompt,
+            stream=True,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.2,
+                max_output_tokens=2000,
+            )
+        )
+        
+        for chunk in response:
+            if chunk.text:
+                yield f"data: {json.dumps({'content': chunk.text})}\n\n"
+        
         yield f"data: [DONE]\n\n"
-
+    
     except Exception as e:
         yield f"data: {json.dumps({'error': str(e)})}\n\n"
         yield f"data: [DONE]\n\n"
+
+def generate_gemini_text(prompt, max_tokens=500):
+    try:
+        response = gemini_model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.1,
+                max_output_tokens=max_tokens,
+            )
+        )
+        return response.text.strip()
+    except Exception as e:
+        return f"Error generating response: {str(e)}"
 
 def chunk_text(text, max_length=2000, overlap=100): 
     chunks = []
@@ -163,7 +156,6 @@ def chunk_text(text, max_length=2000, overlap=100):
 
     return chunks
 
-
 @app.post("/upload_pdf/")
 async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(verify_token)):
     global pdf_chunks, pdf_embeddings
@@ -172,7 +164,7 @@ async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(ve
             all_text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
 
         if not all_text.strip():
-            return {"num_chunks": 0, "error": "No text found in PDF."}
+            return JSONResponse({"num_chunks": 0, "error": "No text found in PDF."})
 
         pdf_chunks = []
         paragraphs = all_text.split('\n\n')
@@ -196,42 +188,25 @@ async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(ve
         
         context = "\n".join(pdf_chunks[:5])
         
-        url = "https://api.mistral.ai/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {MISTRAL_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "model": "mistral-large-latest",
-            "messages": [
-                {
-                    "role": "system", 
-                    "content": "You are a question generator. You MUST respond with exactly 5 plain text questions, one per line. Do not use any formatting, numbers, bullets, asterisks, or special characters. Each line should be a simple question ending with a question mark."
-                },
-                {
-                    "role": "user", 
-                    "content": f"Generate 5 questions about this document content. Return ONLY the questions as plain text, one per line:\n\n{context}"
-                }
-            ],
-            "max_tokens": 200,
-            "temperature": 0.1,
-            "stream": False 
-        }
+        summary_prompt = f"Provide a clear, concise 2-3 sentence summary of this document:\n\n{context}"
+        summary = generate_gemini_text(summary_prompt, max_tokens=150)
         
-        response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()
-        
-        result = response.json()
-        suggestions = result['choices'][0]['message']['content']
-        questions_list = [q.strip() for q in suggestions.split('\n') if q.strip()]
+        questions_prompt = (
+            f"Generate exactly 5 simple questions about this document. "
+            f"Return only the questions as plain text, one per line, no formatting, no numbers:\n\n{context}"
+        )
+        questions_text = generate_gemini_text(questions_prompt, max_tokens=200)
+        questions_list = [q.strip() for q in questions_text.split('\n') if q.strip() and '?' in q][:5]
 
         return JSONResponse({
-        "num_chunks": len(pdf_chunks),
-        "suggested_questions": questions_list  
-})
+            "num_chunks": len(pdf_chunks),
+            "summary": summary,
+            "suggested_questions": questions_list  
+        })
         
     except Exception as e:
         return JSONResponse({"num_chunks": 0, "error": str(e)})
+
 @app.post("/ask/")
 async def ask_question_stream(question: str = Form(...), token_data: dict = Depends(verify_token)):
     def create_error_stream(message):
@@ -270,14 +245,6 @@ async def ask_question_stream(question: str = Form(...), token_data: dict = Depe
         f"- Use good spacing between sections\n"
         f"- Add emojis to highlight important info\n\n"
         f"---\n"
-        f"## 🧮 Math Formatting Examples\n"
-        f"- Inline: $x^2 + y^2$\n"
-        f"- Display: $$\\frac{{a!}}{{b! \\cdot c!}}$$\n"
-        f"- Factorials: $13!$, $3!$, $4!$\n"
-        f"- Fractions: $\\frac{{13!}}{{3! \\cdot 2! \\cdot 4!}}$\n"
-        f"- Display: $$\\frac{{13!}}{{3! \\cdot 2! \\cdot 4!}} = 2880$$\n\n"
-        f" {today}\n\n"
-        f"---\n"
         f"## 📄 Context\n"
         f"{context}\n\n"
         f"## ❓ Question\n"
@@ -287,7 +254,7 @@ async def ask_question_stream(question: str = Form(...), token_data: dict = Depe
     )
 
     return StreamingResponse(
-        stream_mistral_response(prompt),
+        stream_gemini_response(prompt),
         media_type="text/plain",
         headers={
             "Cache-Control": "no-cache",
@@ -299,4 +266,4 @@ async def ask_question_stream(question: str = Form(...), token_data: dict = Depe
 @app.get("/")
 async def root():
     """Health check endpoint - no authentication required"""
-    return {"message": "PDF Chat API is running with ONNX optimization!"}
+    return {"message": "PDF Chat API is running with ONNX optimization and Gemini Flash!"}
