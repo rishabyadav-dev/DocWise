@@ -15,6 +15,7 @@ import os
 from datetime import datetime
 import jwt
 import psutil  
+from fastapi.responses import JSONResponse
 
 load_dotenv()
 origins = os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
@@ -162,6 +163,7 @@ def chunk_text(text, max_length=2000, overlap=100):
 
     return chunks
 
+
 @app.post("/upload_pdf/")
 async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(verify_token)):
     global pdf_chunks, pdf_embeddings
@@ -191,11 +193,45 @@ async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(ve
             pdf_chunks.extend(chunk_text(current_chunk, max_length=2000, overlap=100))
 
         pdf_embeddings = encode_texts(pdf_chunks)
-        return {"num_chunks": len(pdf_chunks)}
+        
+        context = "\n".join(pdf_chunks[:5])
+        
+        url = "https://api.mistral.ai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {MISTRAL_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": "mistral-large-latest",
+            "messages": [
+                {
+                    "role": "system", 
+                    "content": "You are a question generator. You MUST respond with exactly 5 plain text questions, one per line. Do not use any formatting, numbers, bullets, asterisks, or special characters. Each line should be a simple question ending with a question mark."
+                },
+                {
+                    "role": "user", 
+                    "content": f"Generate 5 questions about this document content. Return ONLY the questions as plain text, one per line:\n\n{context}"
+                }
+            ],
+            "max_tokens": 200,
+            "temperature": 0.1,
+            "stream": False 
+        }
+        
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        
+        result = response.json()
+        suggestions = result['choices'][0]['message']['content']
+        questions_list = [q.strip() for q in suggestions.split('\n') if q.strip()]
 
+        return JSONResponse({
+        "num_chunks": len(pdf_chunks),
+        "suggested_questions": questions_list  
+})
+        
     except Exception as e:
-        return {"num_chunks": 0, "error": str(e)}
-
+        return JSONResponse({"num_chunks": 0, "error": str(e)})
 @app.post("/ask/")
 async def ask_question_stream(question: str = Form(...), token_data: dict = Depends(verify_token)):
     def create_error_stream(message):

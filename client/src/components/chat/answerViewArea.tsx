@@ -1,5 +1,9 @@
 "use client";
-import { useIsStreamingStore, useUploadedStore } from "@/store/uploadStore";
+import {
+  useIsStreamingStore,
+  useSuggestionsStore,
+  useUploadedStore,
+} from "@/store/uploadStore";
 import axios from "axios";
 import "katex/dist/katex.min.css";
 import { motion } from "motion/react";
@@ -9,6 +13,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { Button } from "../ui/button";
 import { useSidebar } from "../ui/sidebar";
 import InputBox from "./inputBox";
 const merriweather = Merriweather({
@@ -22,6 +27,7 @@ export default function AnswerViewArea() {
   const [answer, setAnswer] = useState("");
   const isStreaming = useIsStreamingStore((state) => state.isStreaming);
   const setIsStreaming = useIsStreamingStore((state) => state.setIsStreaming);
+  const suggestions = useSuggestionsStore((state) => state.suggestions);
 
   const askQuestion = async (question: string) => {
     if (!question.trim()) return;
@@ -122,6 +128,17 @@ export default function AnswerViewArea() {
     [&_.katex-display]:text-center mb-1.5 [&_.katex-display]:my-6
   `}
         >
+          {answer.length === 0 && (
+            <div className="w-full mx-auto">
+              <div className="flex flex-wrap gap-2">
+                {suggestions?.map((s, index) => (
+                  <div key={index}>
+                    <Button>{s}</Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {isStreaming && answer.length === 0 && (
             <div className="font-mono font-stretch-condensed animate-pulse">
               Thinking...

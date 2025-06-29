@@ -1,5 +1,9 @@
 "use client";
-import { usePdfStore, useUploadedStore } from "@/store/uploadStore";
+import {
+  usePdfStore,
+  useSuggestionsStore,
+  useUploadedStore,
+} from "@/store/uploadStore";
 import axios from "axios";
 import { Loader2, Plus, PlusSquare, UploadIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -13,7 +17,7 @@ const MyDropzone = () => {
   const setPdf = usePdfStore((state) => state.setPdf);
   const pdf = usePdfStore((state) => state.pdf);
   const [isSending, setIsSending] = useState(false);
-
+  const setSuggestions = useSuggestionsStore((state) => state.setSuggestions);
   const uploaded = useUploadedStore((state) => state.uploaded);
   const setUploaded = useUploadedStore((state) => state.setUploadedStatus);
   async function HandleSendFiles() {
@@ -41,8 +45,11 @@ const MyDropzone = () => {
           },
         }
       );
-      const data = response.data;
-      console.log("response after file upaldoe:", data);
+      setSuggestions(response.data.suggested_questions);
+      console.log(
+        "response after file upaldoe:",
+        response.data.suggested_questions
+      );
       setUploaded(true);
 
       toast.success("File uploaded successfully!");
