@@ -36,11 +36,10 @@ ALGORITHM = "HS256"
 security = HTTPBearer()
 
 embedder_model = ORTModelForFeatureExtraction.from_pretrained(
-    "sentence-transformers/all-MiniLM-L6-v2", 
-    export=True, 
+    "./onnx_model",  
     provider="CPUExecutionProvider"
 )
-embedder_tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+embedder_tokenizer = AutoTokenizer.from_pretrained("./onnx_model")
 
 pdf_chunks = []
 pdf_embeddings = []
@@ -50,7 +49,6 @@ if not MISTRAL_API_KEY:
     raise ValueError("MISTRAL_API_KEY environment variable not set.")
 
 def encode_texts(texts):
-    """Encode texts using ONNX model for better performance"""
     if isinstance(texts, str):
         texts = [texts]
     
