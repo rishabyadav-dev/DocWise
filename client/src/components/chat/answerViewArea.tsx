@@ -127,13 +127,16 @@ export default function AnswerViewArea() {
     [&_.katex-display]:text-center mb-1.5 [&_.katex-display]:my-6
   `}
         >
-          {answer.length === 0 && (
-            <div className="w-full ">
-              <div>{data?.summary}</div>
-              <div className="flex flex-wrap gap-2">
+          {answer.length === 0 && !isStreaming && (
+            <div className="w-full  flex flex-col gap-5 ">
+              <div className="font-sans text-2xl">{data?.summary}</div>
+              <div className="flex justify-center flex-wrap gap-2">
                 {data?.suggested_questions?.map((s, index) => (
                   <div key={index}>
-                    <Button className="cursor-pointer hover:bg-blue-300 bg-blue-100 text-black border-1">
+                    <Button
+                      onClick={() => askQuestion(s)}
+                      className="cursor-pointer font-light text-xl p-3 hover:bg-blue-300 bg-blue-100 text-black border-1"
+                    >
                       {s}
                     </Button>
                   </div>
@@ -156,7 +159,7 @@ export default function AnswerViewArea() {
 
         <div className=" mt-auto">
           <div className="max-w-4xl mx-auto">
-            <InputBox askQuestion={askQuestion} />
+            <InputBox setAnswer={setAnswer} askQuestion={askQuestion} />
           </div>
         </div>
       </motion.div>

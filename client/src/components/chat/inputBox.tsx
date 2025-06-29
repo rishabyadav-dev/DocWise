@@ -1,6 +1,6 @@
 "use client";
 import { useIsStreamingStore } from "@/store/uploadStore";
-import { FileSearch2Icon } from "lucide-react";
+import { ChartNoAxesGantt, FileSearch2Icon } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,9 +8,11 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import Loader from "../ui/loader";
 export default function InputBox({
+  setAnswer,
   askQuestion,
 }: {
   askQuestion: (arg: string) => void;
+  setAnswer: any;
 }) {
   const isStreaming = useIsStreamingStore((state) => state.isStreaming);
 
@@ -51,6 +53,14 @@ export default function InputBox({
           <Loader size={15}></Loader>
         </motion.div>
       )}
+      <Button
+        onClick={() => setAnswer("")}
+        disabled={isStreaming}
+        title="See suggestions"
+        className="bg-blue-200 text-black hover:text-white cursor-pointer  w-fit m-auto h-full "
+      >
+        <ChartNoAxesGantt className="size-7 " />
+      </Button>
       <Input
         disabled={isStreaming}
         placeholder="Ask questions "
