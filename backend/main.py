@@ -14,6 +14,7 @@ import json
 import os
 from datetime import datetime
 import jwt
+import psutil  
 
 load_dotenv()
 origins = os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
@@ -48,24 +49,29 @@ MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 if not MISTRAL_API_KEY:
     raise ValueError("MISTRAL_API_KEY environment variable not set.")
 
-def encode_texts(texts):
+def log_memory_usage():
+    process = psutil.Process(os.getpid())
+    print(f"Memory usage: {process.memory_info().rss / 1024 ** 2:.2f} MB")
+
+def encode_texts(texts, batch_size=64):  #
     if isinstance(texts, str):
         texts = [texts]
-    
-    inputs = embedder_tokenizer(
-        texts, 
-        padding=True, 
-        truncation=True, 
-        return_tensors="pt", 
-        max_length=512
-    )
-    
-    with torch.no_grad():
-        outputs = embedder_model(**inputs)
-    
-    embeddings = outputs.last_hidden_state.mean(dim=1)
-    return embeddings.detach().numpy()
-
+    all_embeddings = []
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i+batch_size]
+        inputs = embedder_tokenizer(
+            batch, 
+            padding=True, 
+            truncation=True, 
+            return_tensors="pt", 
+            max_length=512
+        )
+        with torch.no_grad():
+            outputs = embedder_model(**inputs)
+        embeddings = outputs.last_hidden_state.mean(dim=1)
+        all_embeddings.append(embeddings.detach().cpu().numpy())
+    log_memory_usage() 
+    return np.vstack(all_embeddings)
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
         if not credentials.credentials:
@@ -135,7 +141,7 @@ def stream_mistral_response(prompt, model="mistral-large-latest", max_tokens=200
         yield f"data: {json.dumps({'error': str(e)})}\n\n"
         yield f"data: [DONE]\n\n"
 
-def chunk_text(text, max_length=1200, overlap=100):
+def chunk_text(text, max_length=2000, overlap=100): 
     chunks = []
     start = 0
 
