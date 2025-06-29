@@ -181,14 +181,14 @@ async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(ve
             if not paragraph:
                 continue
 
-            if len(current_chunk) + len(paragraph) > 1200 and current_chunk:
-                pdf_chunks.extend(chunk_text(current_chunk, max_length=1200, overlap=100))
+            if len(current_chunk) + len(paragraph) > 2000 and current_chunk:
+                pdf_chunks.extend(chunk_text(current_chunk, max_length=2000, overlap=100))
                 current_chunk = paragraph
             else:
                 current_chunk += "\n\n" + paragraph if current_chunk else paragraph
 
         if current_chunk:
-            pdf_chunks.extend(chunk_text(current_chunk, max_length=1200, overlap=100))
+            pdf_chunks.extend(chunk_text(current_chunk, max_length=2000, overlap=100))
 
         pdf_embeddings = encode_texts(pdf_chunks)
         return {"num_chunks": len(pdf_chunks)}
