@@ -3,11 +3,12 @@ import { usePdfStore, useUploadedStore } from "@/store/uploadStore";
 import axios from "axios";
 import { Loader2, Plus, PlusSquare, UploadIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { useCallback, useState } from "react";
 import { FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
-
+pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 const MyDropzone = () => {
   const setPdf = usePdfStore((state) => state.setPdf);
   const pdf = usePdfStore((state) => state.pdf);
@@ -54,9 +55,27 @@ const MyDropzone = () => {
   }
 
   const onDrop = useCallback(
-    (acceptedFiles: File[], fileRejections: FileRejection[]) => {
+    async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
       if (acceptedFiles.length > 0) {
         const file = acceptedFiles[0];
+        if (file && file.type === "application/pdf") {
+          async function pageCOunt(): Promise<number> {
+            const arrayBuffer = await file.arrayBuffer();
+            try {
+              const pdf = await pdfjsLib.getDocument({ data: arrayBuffer })
+                .promise;
+              return pdf.numPages;
+            } catch (err) {
+              alert("Failed to read PDF file.");
+              return 0;
+            }
+          }
+          const pageCount = await pageCOunt();
+          if (!(pageCount > 0 && pageCount < 20)) {
+            toast.error("Your PDF is too big ,Max pages allowed in PDF:20");
+            return;
+          }
+        }
         setPdf(file);
         console.log("Uploaded file:", file.name);
         toast.success(`File selected: ${file.name}`);
@@ -79,7 +98,7 @@ const MyDropzone = () => {
   } = useDropzone({
     onDrop,
     maxFiles: 1,
-    maxSize: 1024 * 1024 * 10,
+    maxSize: 1024 * 1024 * 5,
     accept: {
       "application/pdf": [".pdf"],
       "text/plain": [".txt"],
@@ -191,6 +210,7 @@ const MyDropzone = () => {
                 className="bg-white rounded-lg p-6 relative"
               >
                 <Button
+                  disabled={isSending}
                   variant="ghost"
                   size="sm"
                   className="absolute top-2 right-2 w-8 h-8 flex justify-center items-center cursor-pointer rounded-full bg-red-600 hover:bg-red-600 text-white shadow-lg z-10"
