@@ -1,0 +1,17 @@
+**/pdf.js linguist-vendored
+**/pdf.worker.js linguist-vendored
+**/pdf.min.js linguist-vendored
+**/pdf.worker.min.js linguist-vendored
+**/pdf.worker.min.mjs linguist-vendored
+
+public/pdf.worker.min.mjs linguist-vendored
+
+node_modules/** linguist-vendored
+
+**/*.min.js linguist-vendored
+
+dist/** linguist-vendored
+build/** linguist-vendored
+.next/** linguist-vendored
+
+**/pdfjs-dist/** linguist-vendored
