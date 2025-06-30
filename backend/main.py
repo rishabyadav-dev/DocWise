@@ -41,7 +41,19 @@ if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY environment variable not set.")
 
 genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+GEMINI_MODELS = [
+    "gemini-1.5-flash",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-pro",
+    "gemini-2.5-pro"
+]
+
+current_gemini_index = 0
+def get_gemini_model():
+    return genai.GenerativeModel(GEMINI_MODELS[current_gemini_index])
 
 embedder_model = ORTModelForFeatureExtraction.from_pretrained(
     "./onnx_model",  
@@ -101,39 +113,54 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         )
 
 def stream_gemini_response(prompt):
-    """Stream response from Gemini Flash"""
-    try:
-        response = gemini_model.generate_content(
-            prompt,
-            stream=True,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.2,
-                max_output_tokens=2000,
+    global current_gemini_index
+    for attempt in range(len(GEMINI_MODELS)):
+        model = get_gemini_model()
+        try:
+            response = model.generate_content(
+                prompt,
+                stream=True,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.2,
+                    max_output_tokens=2000,
+                )
             )
-        )
-        
-        for chunk in response:
-            if chunk.text:
-                yield f"data: {json.dumps({'content': chunk.text})}\n\n"
-        
-        yield f"data: [DONE]\n\n"
-    
-    except Exception as e:
-        yield f"data: {json.dumps({'error': str(e)})}\n\n"
-        yield f"data: [DONE]\n\n"
+            for chunk in response:
+                if chunk.text:
+                    yield f"data: {json.dumps({'content': chunk.text})}\n\n"
+            yield f"data: [DONE]\n\n"
+            return
+        except Exception as e:
+            if "429" in str(e) or "Too Many Requests" in str(e):
+                current_gemini_index = (current_gemini_index + 1) % len(GEMINI_MODELS)
+                continue
+            else:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                yield f"data: [DONE]\n\n"
+                return
+    yield f"data: {json.dumps({'error': 'All Gemini models are rate-limited or unavailable.'})}\n\n"
+    yield f"data: [DONE]\n\n"
 
 def generate_gemini_text(prompt, max_tokens=500):
-    try:
-        response = gemini_model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.1,
-                max_output_tokens=max_tokens,
+    global current_gemini_index
+    for attempt in range(len(GEMINI_MODELS)):
+        model = get_gemini_model()
+        try:
+            response = model.generate_content(
+                prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.1,
+                    max_output_tokens=max_tokens,
+                )
             )
-        )
-        return response.text.strip()
-    except Exception as e:
-        return f"Error generating response: {str(e)}"
+            return response.text.strip()
+        except Exception as e:
+            if "429" in str(e) or "Too Many Requests" in str(e):
+                current_gemini_index = (current_gemini_index + 1) % len(GEMINI_MODELS)
+                continue
+            else:
+                return f"Error generating response: {str(e)}"
+    return "All Gemini models are currently rate-limited or unavailable."
 
 def chunk_text(text, max_length=2000, overlap=100): 
     chunks = []
