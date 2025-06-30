@@ -95,7 +95,7 @@ You will need to create environment files for both the backend and frontend.
 
 ```bash
 BACKEND_JWT_SECRET= "your_backend_secret"
-CORS_ALLOW_ORIGINS= "your_frontend_address" | eg-http://localhost:3000
+CORS_ALLOW_ORIGINS= "your_frontend_address"   #eg-http://localhost:3000
 
 # Gemini API Key (Google Generative AI)
 GEMINI_API_KEY= "your_gemini_api_key"
@@ -104,10 +104,10 @@ GEMINI_API_KEY= "your_gemini_api_key"
 **Frontend (`client/.env.local`):**
 
 ```bash
-AUTH_SECRET= "next-auth_scret"  | auto generate using- npx auth secret
+AUTH_SECRET= "next-auth_scret"   #auto generate using- npx auth secret
 AUTH_GOOGLE_ID= "your_google_client_id"
 AUTH_GOOGLE_SECRET= "your_google_auth_secret"
-BACKEND_JWT_SECRET= "your_backend_secret"  | note- this should be exact which is used in backend .env BACKEND_JWT_SECRET
+BACKEND_JWT_SECRET= "your_backend_secret"   #this should be exact which is used in backend .env BACKEND_JWT_SECRET
 NEXT_PUBLIC_BACKEND_URL= "http://127.0.0.1:8000"
 ```
 
