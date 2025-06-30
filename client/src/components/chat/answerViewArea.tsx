@@ -14,6 +14,7 @@ import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import { Button } from "../ui/button";
+import CodeBlock from "./CodeBlock";
 import InputBox from "./inputBox";
 const merriweather = Merriweather({
   subsets: ["latin"],
@@ -163,6 +164,9 @@ export default function AnswerViewArea() {
           <ReactMarkdown
             remarkPlugins={[remarkMath, remarkGfm]}
             rehypePlugins={[rehypeKatex]}
+            components={{
+              code: CodeBlock,
+            }}
           >
             {answer}
           </ReactMarkdown>

@@ -84,7 +84,7 @@ const MyDropzone = () => {
             const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer })
               .promise;
             const pageCount = pdfDoc.numPages;
-            if (pageCount <= 0 || pageCount > 20) {
+            if (pageCount <= 0 || pageCount > 200) {
               toast.error(
                 `PDF has ${pageCount} pages. Maximum 20 pages allowed.`
               );
