@@ -112,30 +112,41 @@ export default function AnswerViewArea() {
         initial={{ x: 200, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col  h-[93vh]"
+        className="flex border-t-2 flex-col p-1  lg:w-full w-screen h-[93vh] lg:h-[93vh]"
       >
         <div
-          className={`font-serif ${merriweather.className} overflow-y-auto py-10 mx-30  px-8 scrollbar-thin
+          className={`font-serif ${merriweather.className} overflow-y-auto lg:py-10 lg:mx-30  lg:px-8 scrollbar-thin
     prose prose-slate max-w-none
-    leading-relaxed
-    [&>*]:text-lg
-    [&_h1]:text-3xl
-    [&_h2]:text-2xl
-    [&_h3]:text-xl
-    [&_li]:text-lg
-    [&_p]:text-lg
-    [&_.katex-display]:text-center mb-1.5 [&_.katex-display]:my-6
+    leading-normal
+    [&>*]:text-md
+    [&_h1]:text-2xl
+    [&_h2]:text-xl
+    [&_h3]:text-lg
+    [&_li]:text-md
+    [&_p]:text-md
+    [&_.katex-display]:text-center mb-1 [&_.katex-display]:my-6
+
+    lg:leading-relaxed
+    lg:[&>*]:text-lg
+    lg:[&_h1]:text-3xl
+    lg:[&_h2]:text-2xl
+    lg:[&_h3]:text-xl
+    lg:[&_li]:text-lg
+    lg:[&_p]:text-lg
+    lg:[&_.katex-display]:text-center lg:mb-1.5 lg:[&_.katex-display]:my-6
   `}
         >
           {answer.length === 0 && !isStreaming && (
-            <div className="w-full  flex flex-col gap-5 ">
-              <div className="font-sans text-2xl">{data?.summary}</div>
-              <div className="flex justify-center flex-wrap gap-2">
+            <div className="w-full mt-5 lg:mt-3 flex flex-col gap-2 ">
+              <div className="font-sans text-xl mb-4 text-center lg:mb-8 lg:text-2xl">
+                {data?.summary}
+              </div>
+              <div className="flex justify-center w-full flex-wrap gap-2 lg:gap-3">
                 {data?.suggested_questions?.map((s, index) => (
                   <div key={index}>
                     <Button
                       onClick={() => askQuestion(s)}
-                      className="cursor-pointer font-light text-xl p-3 hover:bg-blue-300 bg-blue-100 text-black border-1"
+                      className="cursor-pointer font-light lg:text-xl h-9 rounded-full lg:h-10 px-2 text-[3vw] lg:p-5 duration-500 hover:shadow-lg  hover:bg-blue-300 bg-blue-100 text-black border-1"
                     >
                       {s}
                     </Button>
@@ -158,7 +169,7 @@ export default function AnswerViewArea() {
         </div>
 
         <div className=" mt-auto">
-          <div className="max-w-4xl mx-auto">
+          <div className="lg:max-w-4xl w-full mx-auto">
             <InputBox setAnswer={setAnswer} askQuestion={askQuestion} />
           </div>
         </div>

@@ -32,7 +32,7 @@ export default async function RootLayout({
           <SidebarProvider defaultOpen={false}>
             <div className="flex h-full w-full bg-blue-50">
               <SidebarWrapper />
-              <main className="flex-1 flex flex-col ml-0.5 h-screen mr-2">
+              <main className="flex-1 flex flex-col  lg:ml-0.5 h-screen lg:mr-2 ">
                 {children}
               </main>
             </div>
