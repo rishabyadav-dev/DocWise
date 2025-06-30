@@ -44,15 +44,16 @@ genai.configure(api_key=GEMINI_API_KEY)
 GEMINI_MODELS = [
     "gemini-1.5-flash",
     "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
     "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
     "gemini-1.5-pro",
     "gemini-2.5-pro"
 ]
 
 current_gemini_index = 0
 def get_gemini_model():
+    model_name = GEMINI_MODELS[current_gemini_index]
+    print(f"Using Gemini model: {model_name}")
+
     return genai.GenerativeModel(GEMINI_MODELS[current_gemini_index])
 
 embedder_model = ORTModelForFeatureExtraction.from_pretrained(
@@ -126,10 +127,15 @@ def stream_gemini_response(prompt):
                 )
             )
             for chunk in response:
-                if chunk.text:
+                finish_reason = getattr(chunk, "finish_reason", None)
+                if finish_reason == 2:
+                    current_gemini_index = (current_gemini_index + 1) % len(GEMINI_MODELS)
+                    break  
+                if hasattr(chunk, "text") and chunk.text:
                     yield f"data: {json.dumps({'content': chunk.text})}\n\n"
-            yield f"data: [DONE]\n\n"
-            return
+            else:
+                yield f"data: [DONE]\n\n"
+                return
         except Exception as e:
             if "429" in str(e) or "Too Many Requests" in str(e):
                 current_gemini_index = (current_gemini_index + 1) % len(GEMINI_MODELS)
@@ -153,7 +159,15 @@ def generate_gemini_text(prompt, max_tokens=500):
                     max_output_tokens=max_tokens,
                 )
             )
-            return response.text.strip()
+            finish_reason = None
+            if hasattr(response, "candidates") and response.candidates:
+                finish_reason = getattr(response.candidates[0], "finish_reason", None)
+            if finish_reason == 2:
+                current_gemini_index = (current_gemini_index + 1) % len(GEMINI_MODELS)
+                continue
+            if hasattr(response, "text") and response.text:
+                return response.text.strip()
+            return f"Error: No valid response from Gemini. Finish reason: {finish_reason}"
         except Exception as e:
             if "429" in str(e) or "Too Many Requests" in str(e):
                 current_gemini_index = (current_gemini_index + 1) % len(GEMINI_MODELS)
@@ -161,7 +175,6 @@ def generate_gemini_text(prompt, max_tokens=500):
             else:
                 return f"Error generating response: {str(e)}"
     return "All Gemini models are currently rate-limited or unavailable."
-
 def chunk_text(text, max_length=2000, overlap=100): 
     chunks = []
     start = 0
