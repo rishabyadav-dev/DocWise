@@ -16,7 +16,10 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
+export const metadata: Metadata = {
+  title: "DocWise",
+  description: "Chat with your pdf using AI",
+};
 export default async function RootLayout({
   children,
 }: {
