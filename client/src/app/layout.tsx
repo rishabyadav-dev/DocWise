@@ -1,4 +1,4 @@
-// client/src/app/layout.tsx
+import { Metadata } from 'next';
 import { auth } from "@/auth";
 import { SidebarWrapper } from "@/components/layout/sidebar-wrapper";
 import { SidebarProvider } from "@/components/ui/sidebar";
