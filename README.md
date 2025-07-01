@@ -4,6 +4,9 @@ An intelligent chat application that allows you to have conversations about your
 
 ![](assets/1.png)
 ![](assets/2.png)
+## Live Demo
+https://doc-wise.vercel.app/
+
 
 ## Features
 
