@@ -50,14 +50,17 @@ GEMINI_MODELS = [
 ]
 
 current_gemini_index = 0
+
+
 def get_gemini_model():
     model_name = GEMINI_MODELS[current_gemini_index]
     print(f"Using Gemini model: {model_name}")
 
     return genai.GenerativeModel(GEMINI_MODELS[current_gemini_index])
 
+
 embedder_model = ORTModelForFeatureExtraction.from_pretrained(
-    "./onnx_model",  
+    "./onnx_model",
     provider="CPUExecutionProvider"
 )
 embedder_tokenizer = AutoTokenizer.from_pretrained("./onnx_model")
@@ -65,9 +68,11 @@ embedder_tokenizer = AutoTokenizer.from_pretrained("./onnx_model")
 pdf_chunks = []
 pdf_embeddings = []
 
+
 def log_memory_usage():
     process = psutil.Process(os.getpid())
     print(f"Memory usage: {process.memory_info().rss / 1024 ** 2:.2f} MB")
+
 
 def encode_texts(texts, batch_size=64):
     if isinstance(texts, str):
@@ -76,18 +81,19 @@ def encode_texts(texts, batch_size=64):
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i+batch_size]
         inputs = embedder_tokenizer(
-            batch, 
-            padding=True, 
-            truncation=True, 
-            return_tensors="pt", 
+            batch,
+            padding=True,
+            truncation=True,
+            return_tensors="pt",
             max_length=512
         )
         with torch.no_grad():
             outputs = embedder_model(**inputs)
         embeddings = outputs.last_hidden_state.mean(dim=1)
         all_embeddings.append(embeddings.detach().cpu().numpy())
-    log_memory_usage() 
+    log_memory_usage()
     return np.vstack(all_embeddings)
+
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -113,6 +119,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+
 def stream_gemini_response(prompt):
     global current_gemini_index
     for attempt in range(len(GEMINI_MODELS)):
@@ -129,8 +136,9 @@ def stream_gemini_response(prompt):
             for chunk in response:
                 finish_reason = getattr(chunk, "finish_reason", None)
                 if finish_reason == 2:
-                    current_gemini_index = (current_gemini_index + 1) % len(GEMINI_MODELS)
-                    break  
+                    current_gemini_index = (
+                        current_gemini_index + 1) % len(GEMINI_MODELS)
+                    break
                 if hasattr(chunk, "text") and chunk.text:
                     yield f"data: {json.dumps({'content': chunk.text})}\n\n"
             else:
@@ -138,7 +146,8 @@ def stream_gemini_response(prompt):
                 return
         except Exception as e:
             if "429" in str(e) or "Too Many Requests" in str(e):
-                current_gemini_index = (current_gemini_index + 1) % len(GEMINI_MODELS)
+                current_gemini_index = (
+                    current_gemini_index + 1) % len(GEMINI_MODELS)
                 continue
             else:
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
@@ -146,6 +155,7 @@ def stream_gemini_response(prompt):
                 return
     yield f"data: {json.dumps({'error': 'All Gemini models are rate-limited or unavailable.'})}\n\n"
     yield f"data: [DONE]\n\n"
+
 
 def generate_gemini_text(prompt, max_tokens=500):
     global current_gemini_index
@@ -161,21 +171,26 @@ def generate_gemini_text(prompt, max_tokens=500):
             )
             finish_reason = None
             if hasattr(response, "candidates") and response.candidates:
-                finish_reason = getattr(response.candidates[0], "finish_reason", None)
+                finish_reason = getattr(
+                    response.candidates[0], "finish_reason", None)
             if finish_reason == 2:
-                current_gemini_index = (current_gemini_index + 1) % len(GEMINI_MODELS)
+                current_gemini_index = (
+                    current_gemini_index + 1) % len(GEMINI_MODELS)
                 continue
             if hasattr(response, "text") and response.text:
                 return response.text.strip()
             return f"Error: No valid response from Gemini. Finish reason: {finish_reason}"
         except Exception as e:
             if "429" in str(e) or "Too Many Requests" in str(e):
-                current_gemini_index = (current_gemini_index + 1) % len(GEMINI_MODELS)
+                current_gemini_index = (
+                    current_gemini_index + 1) % len(GEMINI_MODELS)
                 continue
             else:
                 return f"Error generating response: {str(e)}"
     return "All Gemini models are currently rate-limited or unavailable."
-def chunk_text(text, max_length=2000, overlap=100): 
+
+
+def chunk_text(text, max_length=2000, overlap=100):
     chunks = []
     start = 0
 
@@ -196,12 +211,14 @@ def chunk_text(text, max_length=2000, overlap=100):
 
     return chunks
 
+
 @app.post("/upload_pdf/")
 async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(verify_token)):
     global pdf_chunks, pdf_embeddings
     try:
         with pdfplumber.open(file.file) as pdf:
-            all_text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
+            all_text = "\n".join(page.extract_text()
+                                 for page in pdf.pages if page.extract_text())
 
         if not all_text.strip():
             return JSONResponse({"num_chunks": 0, "error": "No text found in PDF."})
@@ -216,36 +233,40 @@ async def upload_pdf(file: UploadFile = File(...), token_data: dict = Depends(ve
                 continue
 
             if len(current_chunk) + len(paragraph) > 2000 and current_chunk:
-                pdf_chunks.extend(chunk_text(current_chunk, max_length=2000, overlap=100))
+                pdf_chunks.extend(chunk_text(
+                    current_chunk, max_length=2000, overlap=100))
                 current_chunk = paragraph
             else:
                 current_chunk += "\n\n" + paragraph if current_chunk else paragraph
 
         if current_chunk:
-            pdf_chunks.extend(chunk_text(current_chunk, max_length=2000, overlap=100))
+            pdf_chunks.extend(chunk_text(
+                current_chunk, max_length=2000, overlap=100))
 
         pdf_embeddings = encode_texts(pdf_chunks)
-        
+
         context = "\n".join(pdf_chunks[:5])
-        
-        summary_prompt = f"Provide a clear, concise 2-3 sentence summary of this document:\n\n{context}"
+
+        summary_prompt = f"Provide a clear, concise 2 sentence summary of this document:\n\n{context}"
         summary = generate_gemini_text(summary_prompt, max_tokens=150)
-        
+
         questions_prompt = (
             f"Generate exactly 5 simple questions about this document. "
             f"Return only the questions as plain text, one per line, no formatting, no numbers:\n\n{context}"
         )
         questions_text = generate_gemini_text(questions_prompt, max_tokens=200)
-        questions_list = [q.strip() for q in questions_text.split('\n') if q.strip() and '?' in q][:5]
+        questions_list = [q.strip() for q in questions_text.split(
+            '\n') if q.strip() and '?' in q][:5]
 
         return JSONResponse({
             "num_chunks": len(pdf_chunks),
             "summary": summary,
-            "suggested_questions": questions_list  
+            "suggested_questions": questions_list
         })
-        
+
     except Exception as e:
         return JSONResponse({"num_chunks": 0, "error": str(e)})
+
 
 @app.post("/ask/")
 async def ask_question_stream(question: str = Form(...), token_data: dict = Depends(verify_token)):
@@ -255,7 +276,8 @@ async def ask_question_stream(question: str = Form(...), token_data: dict = Depe
 
     if not pdf_chunks:
         return StreamingResponse(
-            create_error_stream("No PDF uploaded yet. Please upload a PDF first."),
+            create_error_stream(
+                "No PDF uploaded yet. Please upload a PDF first."),
             media_type="text/plain",
             headers={
                 "Cache-Control": "no-cache",
@@ -302,6 +324,7 @@ async def ask_question_stream(question: str = Form(...), token_data: dict = Depe
             "Content-Type": "text/plain; charset=utf-8"
         }
     )
+
 
 @app.get("/")
 async def root():

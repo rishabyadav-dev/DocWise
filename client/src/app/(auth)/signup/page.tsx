@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
 export default function SignUpPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -59,7 +60,7 @@ export default function SignUpPage() {
       if (axios.isAxiosError(error)) {
         toast.error(
           error.response?.data?.message ||
-            "User already exists! Try logging in."
+            "User already exists! Try logging in.",
         );
       } else {
         toast.error("Network error. Check your connection.");
@@ -76,14 +77,16 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
-        <div className="md:w-1/2 bg-gradient-to-br from-blue-600 to-indigo-800 p-8 flex flex-col justify-center items-center text-white">
-          <h1 className="text-6xl font-bold mb-28">DocWise</h1>
-          <p className="text-blue-100 mb-8  text-lg">
+    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-black to-gray-900 dark:from-black dark:to-gray-950 p-4">
+      <div className=" w-full max-w-4xl bg-gray-900 dark:bg-black rounded-2xl  overflow-hidden flex flex-col md:flex-row">
+        <div className="md:w-1/2 bg-gradient-to-br  from-gray-800 to-gray-900 dark:from-gray-950 dark:to-black p-8 flex flex-col justify-center items-center text-white">
+          <h1 className="text-6xl font-bold lg:mb-28 mb-6 text-gray-100 dark:text-white">
+            DocWise
+          </h1>
+          <p className="text-gray-300 text-center dark:text-gray-400 mb-8 text-lg">
             Sign up to access exclusive features like chat history and more
           </p>
-          <ul className="space-y-3 text-lg">
+          <ul className="space-y-3 text-lg text-gray-200 dark:text-gray-300">
             <li className="flex items-center gap-2">
               <Check className="w-5 h-5" />
               Easy to use interface
@@ -97,15 +100,15 @@ export default function SignUpPage() {
 
         <div className="md:w-1/2 p-8 flex flex-col justify-center">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-gray-800">Create Account</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold text-white">Create Account</h1>
+            <p className="text-gray-400 mt-2">
               Sign up with your email or Google
             </p>
           </div>
 
           <Button
             variant="outline"
-            className="w-full cursor-pointer flex items-center justify-center gap-2 mb-6 border-gray-300"
+            className="w-full cursor-pointer flex items-center justify-center gap-2 mb-6 border-gray-600 text-gray-200"
             onClick={() => signIn("google", { callbackUrl })}
           >
             <div className="gap-2 flex items-center">
@@ -120,9 +123,9 @@ export default function SignUpPage() {
           </Button>
 
           <div className="flex items-center my-4">
-            <div className="flex-grow border-t border-gray-200" />
+            <div className="flex-grow border-t border-gray-700" />
             <span className="mx-3 text-gray-400 text-sm">or</span>
-            <div className="flex-grow border-t border-gray-200" />
+            <div className="flex-grow border-t border-gray-700" />
           </div>
 
           <div className="space-y-5">
@@ -133,13 +136,13 @@ export default function SignUpPage() {
                 onKeyDown={handleKeyDown}
                 type="text"
                 placeholder="Full Name"
-                className="px-4 py-3 text-lg"
+                className="px-4 py-3 text-lg bg-gray-800 text-gray-200 border-gray-700"
                 required
                 autoComplete="name"
                 aria-label="Full Name"
               />
               {fieldErrors.name && (
-                <div className="text-red-600 text-sm mt-1">
+                <div className="text-red-500 text-sm mt-1">
                   {fieldErrors.name}
                 </div>
               )}
@@ -151,13 +154,13 @@ export default function SignUpPage() {
                 onKeyDown={handleKeyDown}
                 type="email"
                 placeholder="Email"
-                className="px-4 py-3 text-lg"
+                className="px-4 py-3 text-lg bg-gray-800 text-gray-200 border-gray-700"
                 required
                 autoComplete="email"
                 aria-label="Email"
               />
               {fieldErrors.email && (
-                <div className="text-red-600 text-sm mt-1">
+                <div className="text-red-500 text-sm mt-1">
                   {fieldErrors.email}
                 </div>
               )}
@@ -169,20 +172,20 @@ export default function SignUpPage() {
                 onKeyDown={handleKeyDown}
                 type="password"
                 placeholder="Password"
-                className="px-4 py-3 text-lg"
+                className="px-4 py-3 text-lg bg-gray-800 text-gray-200 border-gray-700"
                 required
                 minLength={8}
                 autoComplete="new-password"
                 aria-label="Password"
               />
               {fieldErrors.password && (
-                <div className="text-red-600 text-sm mt-1">
+                <div className="text-red-500 text-sm mt-1">
                   {fieldErrors.password}
                 </div>
               )}
             </div>
             <Button
-              className="w-full cursor-pointer py-3 text-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg"
+              className="w-full cursor-pointer py-3 text-lg bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg"
               disabled={loader}
               onClick={HandleSignup}
             >
@@ -190,9 +193,9 @@ export default function SignUpPage() {
             </Button>
           </div>
 
-          <div className="mt-6 text-center text-gray-600">
+          <div className="mt-6 text-center text-gray-400">
             Already have an account?{" "}
-            <Link href="/signin" className="text-blue-600 hover:underline">
+            <Link href="/signin" className="text-blue-400 hover:underline">
               Sign in
             </Link>
           </div>
