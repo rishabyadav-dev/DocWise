@@ -53,7 +53,7 @@ export default function AnswerViewArea() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -113,10 +113,10 @@ export default function AnswerViewArea() {
         initial={{ x: 200, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="flex border-t-2 flex-col p-1  lg:w-full w-screen h-[93vh] lg:h-[93vh]"
+        className="flex border-t-2 flex-col  lg:p-0  lg:w-full w-screen h-[94vh] lg:h-[94vh]"
       >
         <div
-          className={`font-serif ${merriweather.className} overflow-y-auto lg:py-10 lg:mx-30  lg:px-8 scrollbar-thin
+          className={`!font-sans ${merriweather.className} overflow-y-auto pt-3  lg:py-10 lg:mx-30  lg:px-8 scrollbar-thin
     prose prose-slate max-w-none
     leading-normal
     [&>*]:text-md
@@ -125,7 +125,7 @@ export default function AnswerViewArea() {
     [&_h3]:text-lg
     [&_li]:text-md
     [&_p]:text-md
-    [&_.katex-display]:text-center mb-1 [&_.katex-display]:my-6
+    [&_.katex-display]:text-center  [&_.katex-display]:my-6
 
     lg:leading-relaxed
     lg:[&>*]:text-lg
@@ -134,12 +134,12 @@ export default function AnswerViewArea() {
     lg:[&_h3]:text-xl
     lg:[&_li]:text-lg
     lg:[&_p]:text-lg
-    lg:[&_.katex-display]:text-center lg:mb-1.5 lg:[&_.katex-display]:my-6
+    lg:[&_.katex-display]:text-center  lg:[&_.katex-display]:my-6
   `}
         >
           {answer.length === 0 && !isStreaming && (
-            <div className="w-full mt-5 lg:mt-3 flex flex-col gap-2 ">
-              <div className="font-sans text-xl mb-4 text-center lg:mb-8 lg:text-2xl">
+            <div className="w-full font-serif font-medium mt-5 lg:mt-3 flex flex-col gap-2 ">
+              <div className=" text-lg mb-4 text-center lg:mb-8 lg:text-2xl">
                 {data?.summary}
               </div>
               <div className="flex justify-center w-full flex-wrap gap-2 lg:gap-3">
@@ -147,7 +147,7 @@ export default function AnswerViewArea() {
                   <div key={index}>
                     <Button
                       onClick={() => askQuestion(s)}
-                      className="cursor-pointer font-light lg:text-xl h-9 rounded-full lg:h-10 px-2 text-[3vw] lg:p-5 duration-500 hover:shadow-lg  hover:bg-blue-300 bg-blue-100 text-black border-1"
+                      className="min-w-0 cursor-pointer h-fit   lg:text-[22px] place-content-center text-center block break-words whitespace-normal  rounded-full px-2.5 py-1.5 text-[16px]  max-w-[90vw] w-fit lg:px-4 lg:py-1.5 duration-500 hover:shadow-md shadow-2xs  shadow-foreground/20 hover:shadow-foreground/30 hover:bg-input bg-accent border text-foreground border-foreground/10"
                     >
                       {s}
                     </Button>
@@ -172,8 +172,8 @@ export default function AnswerViewArea() {
           </ReactMarkdown>
         </div>
 
-        <div className=" mt-auto">
-          <div className="lg:max-w-4xl w-full mx-auto">
+        <div className=" bg-input mt-auto">
+          <div className="lg:max-w-4xl  w-full mx-auto">
             <InputBox setAnswer={setAnswer} askQuestion={askQuestion} />
           </div>
         </div>

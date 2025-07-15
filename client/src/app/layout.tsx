@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import { Metadata } from "next";
 import { auth } from "@/auth";
 import { SidebarWrapper } from "@/components/layout/sidebar-wrapper";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -7,6 +7,7 @@ import { SessionProvider } from "next-auth/react";
 import { Geist, Geist_Mono } from "next/font/google";
 import React from "react";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,21 +28,28 @@ export default async function RootLayout({
 }) {
   const session = await auth();
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" suppressHydrationWarning className="h-full">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}
       >
-        <SessionProvider session={session}>
-          <SidebarProvider defaultOpen={false}>
-            <div className="flex h-full w-full bg-blue-50">
-              <SidebarWrapper />
-              <main className="flex-1 flex flex-col  lg:ml-0.5 h-screen lg:mr-2 ">
-                {children}
-              </main>
-            </div>
-            <Toaster />
-          </SidebarProvider>
-        </SessionProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SessionProvider session={session}>
+            <SidebarProvider defaultOpen={false}>
+              <div className="flex h-full w-full bg-background">
+                <SidebarWrapper />
+                <main className="flex-1 flex flex-col lg:py-0.5 p-0  h-screen lg:mr-2 m-0">
+                  {children}
+                </main>
+              </div>
+              <Toaster position="top-center" richColors />
+            </SidebarProvider>
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

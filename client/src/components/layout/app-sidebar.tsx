@@ -15,31 +15,50 @@ import {
 import { signOutAction } from "@/serverActions/signout";
 import { ArrowLeftFromLine, PenBoxIcon, Settings } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
+import { ModeToggle } from "../theme/mode-toggle";
+import { Switch } from "../ui/switch";
+import { Button } from "../ui/button";
 
 export function AppSidebar() {
   const { data: session } = useSession();
   const { open } = useSidebar();
+  const pathname = usePathname();
+
   return (
     <Sidebar collapsible="icon" variant="floating">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Chat with PDF</SidebarGroupLabel>
+          <SidebarGroupLabel>Docwise-Chat with PDF</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem className="bg-blue-100  rounded-lg">
-                <SidebarMenuButton className="hover:bg-blue-300" asChild>
+            <SidebarMenu className="gap-2.5">
+              <SidebarMenuItem className="  rounded-lg">
+                <SidebarMenuButton
+                  className="bg-accent/50 border shadow-xs hover:bg-input/50"
+                  asChild
+                  isActive={pathname === "/"}
+                >
                   <a href={"/"}>
                     <PenBoxIcon />
                     <span>{"New chat"}</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem className="bg-blue-100  rounded-lg">
-                <SidebarMenuButton className="hover:bg-blue-300" asChild>
+              {/* <SidebarMenuItem className=" rounded-lg">
+                <SidebarMenuButton
+                  className="bg-accent/50 border shadow-xs hover:bg-input/50"
+                  asChild
+                  isActive={pathname === "/settings"}
+                >
                   <a href={"/settings"}>
                     <Settings />
                     <span>{"Settings"}</span>
                   </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem> */}
+              <SidebarMenuItem className="  rounded-lg">
+                <SidebarMenuButton className="cursor-pointer " asChild>
+                  <ModeToggle className="w-full !shadow-xs" />
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -51,14 +70,14 @@ export function AppSidebar() {
           {open && (
             <SidebarMenuItem className="flex  list-none">
               <div>Hi, </div>
-              <div>{session?.user.name}</div>
+              {session?.user.name && <div>{session?.user.name}</div>}
             </SidebarMenuItem>
           )}
           <SidebarMenuItem className="list-none">
             <SidebarMenuButton
               title="signout"
               onClick={signOutAction}
-              className="hover:bg-red-100 bg-red-200 hover:text-red-600 transition-colors cursor-pointer w-full"
+              className="hover:bg-red-100  bg-red-400 border shadow-xs hover:text-red-600 transition-colors cursor-pointer w-full"
             >
               <ArrowLeftFromLine className="h-4 w-4" />
               <span>Sign out</span>
