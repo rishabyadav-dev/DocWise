@@ -1,7 +1,27 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "tailwind-scrollbar";
+/* Light theme */
+::selection {
+    background-color: #3b82f6;
+    color: #ffffff;
+}
 
+/* Dark theme */
+.dark ::selection {
+    background-color: #60a5fa;
+    color: #1f2937;
+}
+
+::-moz-selection {
+    background-color: #3b82f6;
+    color: #ffffff;
+}
+
+.dark ::-moz-selection {
+    background-color: #60a5fa;
+    color: #1f2937;
+}
 /* globals.css */
 html,
 body {

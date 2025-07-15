@@ -15,6 +15,7 @@ from datetime import datetime
 import jwt
 import psutil
 import google.generativeai as genai
+import re
 
 load_dotenv()
 origins = os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
@@ -120,6 +121,14 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         )
 
 
+def ensure_code_block_spacing(text: str) -> str:
+    text = re.sub(r'[ \t]*```', r'\n```\n', text)
+    text = re.sub(r'\n{3,}', r'\n\n', text)
+    text = re.sub(r'([^\n])\n```', r'\1\n\n```', text)
+    text = re.sub(r'```\n([^\n])', r'```\n\n\1', text)
+    return text
+
+
 def stream_gemini_response(prompt):
     global current_gemini_index
     for attempt in range(len(GEMINI_MODELS)):
@@ -140,6 +149,7 @@ def stream_gemini_response(prompt):
                         current_gemini_index + 1) % len(GEMINI_MODELS)
                     break
                 if hasattr(chunk, "text") and chunk.text:
+                    # Don't apply code block spacing to individual chunks as it breaks code blocks
                     yield f"data: {json.dumps({'content': chunk.text})}\n\n"
             else:
                 yield f"data: [DONE]\n\n"
@@ -157,7 +167,7 @@ def stream_gemini_response(prompt):
     yield f"data: [DONE]\n\n"
 
 
-def generate_gemini_text(prompt, max_tokens=500):
+def generate_gemini_text(prompt, max_tokens=2000):
     global current_gemini_index
     for attempt in range(len(GEMINI_MODELS)):
         model = get_gemini_model()
@@ -178,7 +188,7 @@ def generate_gemini_text(prompt, max_tokens=500):
                     current_gemini_index + 1) % len(GEMINI_MODELS)
                 continue
             if hasattr(response, "text") and response.text:
-                return response.text.strip()
+                return ensure_code_block_spacing(response.text.strip())
             return f"Error: No valid response from Gemini. Finish reason: {finish_reason}"
         except Exception as e:
             if "429" in str(e) or "Too Many Requests" in str(e):
@@ -299,20 +309,26 @@ async def ask_question_stream(question: str = Form(...), token_data: dict = Depe
         f"🚫 *Do NOT include any information not present in the context.*\n\n"
         f"---\n"
         f"## ✨ Formatting Guidelines\n"
-        f"- Use markdown headings (with **bold** for section titles)\n"
-        f"- Use **bold** for emphasis\n"
-        f"- Use bullet points (•) and numbered lists (1., 2., 3.)\n"
-        f"- For math, use LaTeX: inline as $...$, display as $$...$$ (centered)\n"
-        f"- Add relevant examples from the context\n"
-        f"- Use good spacing between sections\n"
-        f"- Add emojis to highlight important info\n\n"
+        f"- Write concisely and get straight to the point\n"
+        f"- Use markdown headings (## for main sections, ### for subsections)\n"
+        f"- Use **bold** for key terms and emphasis\n"
+        f"- Keep your response focused, maximum 2000 tokens\n"
+        f"- Use bullet points (•) for lists - keep them short and impactful\n"
+        f"- Use numbered lists (1., 2., 3.) for step-by-step processes\n"
+        f"- For math, use LaTeX: inline as $...$ or display as $$...$$\n"
+        f"- Include relevant examples from the context when helpful\n"
+        f"- Write in clear, professional paragraphs without excessive spacing\n"
+        f"- For code blocks: Start with ``` on its own line, add language, then code, then ``` on its own line\n"
+        f"- Avoid redundant information and filler text\n"
+        f"- Use section breaks strategically, not excessively\n"
+        f"- Add relevant emojis sparingly to highlight key points\n\n"
         f"---\n"
         f"## 📄 Context\n"
         f"{context}\n\n"
         f"## ❓ Question\n"
         f"{question}\n\n"
         f"---\n"
-        f"💡 *Please provide a well-structured, concise, and visually appealing answer following the above formatting.*"
+        f"💡 *Provide a well-structured, concise answer that maximizes information density while remaining clear and professional.*"
     )
 
     return StreamingResponse(
