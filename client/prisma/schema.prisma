@@ -1,24 +1,59 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  extensions        = [vector]
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
+  id       String  @id @default(cuid())
   email    String  @unique
   name     String?
   password String?
+  files    File[]
   chats    Chat[]
+
+  @@map("USERS")
+}
+
+model File {
+  id        Int      @id @default(autoincrement())
+  name      String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  chats     Chat[]
+  createdAt DateTime @default(now())
+  summary   String
+  chunks    Chunk[]
+
+  @@map("FILES")
+}
+
+model Chunk {
+  id        Int                          @id @default(autoincrement())
+  file      File                         @relation(fields: [fileId], references: [id])
+  fileId    Int
+  text      String                       @db.Text
+  embedding Unsupported("vector(1536)")?
+  order     Int?
+  page      Int?
+  createdAt DateTime                     @default(now())
 }
 
 model Chat {
-  id       Int     @id @default(autoincrement())
-  user     User    @relation(fields: [userId], references: [id])
-  userId   Int
-  question String?
-  answer   String?
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  question  String
+  answer    String?
+  file      File     @relation(fields: [fileId], references: [id])
+  fileId    Int
+  createdAt DateTime @default(now())
+
+  @@map("CHATS")
 }
