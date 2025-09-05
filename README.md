@@ -33,6 +33,7 @@ DocWise is a powerful AI-powered document analysis platform that allows you to u
 ## 🚀 Tech Stack
 
 ### Frontend
+
 - **Next.js 15** - React framework with App Router
 - **TypeScript** - Type-safe JavaScript
 - **Tailwind CSS 4** - Utility-first CSS framework
@@ -42,6 +43,7 @@ DocWise is a powerful AI-powered document analysis platform that allows you to u
 - **Motion** - Animation library
 
 ### Backend
+
 - **Next.js API Routes** - Serverless API endpoints
 - **Prisma** - Database ORM
 - **PostgreSQL** - Primary database
@@ -49,6 +51,7 @@ DocWise is a powerful AI-powered document analysis platform that allows you to u
 - **Argon2** - Password hashing
 
 ### AI & ML
+
 - **Google Gemini 2.5 Flash** - Document processing and text generation
 - **Cohere AI** - Text embeddings for semantic search
 
@@ -65,18 +68,21 @@ Before you begin, ensure you have the following installed:
 ## 🛠️ Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/docwise.git
    cd docwise
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
    Create a `.env.local` file in the root directory:
+
    ```env
    # Database
    DATABASE_URL="postgresql://username:password@localhost:5432/docwise"
@@ -94,12 +100,14 @@ Before you begin, ensure you have the following installed:
    ```
 
 4. **Set up the database**
+
    ```bash
    npx prisma generate
    npx prisma db push
    ```
 
 5. **Start the development server**
+
    ```bash
    npm run dev
    ```
@@ -118,16 +126,19 @@ Try DocWise right now! Visit our live demo at [https://doc-wise.vercel.app/](htt
 ## 🎯 Usage
 
 ### 1. **Upload a Document**
+
 - Click the upload area or drag and drop a PDF file
 - Wait for the document to be processed
 - View the automatic summary and suggested questions
 
 ### 2. **Ask Questions**
+
 - Type your question in the input field
 - Get real-time AI-powered responses
 - Ask follow-up questions for deeper insights
 
 ### 3. **Explore Features**
+
 - View document summaries
 - Use suggested questions as starting points
 - Switch between light and dark themes
@@ -178,6 +189,7 @@ src/
 ### Other Platforms
 
 1. **Build the application**
+
    ```bash
    npm run build
    ```
@@ -225,4 +237,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Vercel** - For hosting and deployment platform
 - **shadcn/ui** - For beautiful UI components
 - **Next.js Team** - For the amazing React framework
-
